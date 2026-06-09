@@ -37,14 +37,14 @@ export default function BrandStoreEditor() {
     const fetchData = async () => {
       try {
         // Fetch Categories for the Featured Category dropdowns
-        const catRes = await fetch('http://127.0.0.1:8000/api/v1/catalog/categories');
+        const catRes = await fetch('http://localhost:8000/api/v1/catalog/categories');
         if (catRes.ok) {
           const catData = await catRes.json();
           setCategories(catData);
         }
 
         // Fetch Brand
-        const res = await fetch(`http://127.0.0.1:8000/api/v1/catalog/brands/${brandId}`);
+        const res = await fetch(`http://localhost:8000/api/v1/catalog/brands/${brandId}`);
         if (res.ok) {
           const data = await res.json();
           setBrandName(data.name);
@@ -73,7 +73,7 @@ export default function BrandStoreEditor() {
     const finalConfig = { ...config, template_id: templateId };
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/catalog/brands/${brandId}`, {
+      const res = await fetch(`http://localhost:8000/api/v1/catalog/brands/${brandId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

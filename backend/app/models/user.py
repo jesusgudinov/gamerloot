@@ -52,3 +52,5 @@ class UserAddress(Base):
     is_default = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="addresses")
+
+import app.models.role

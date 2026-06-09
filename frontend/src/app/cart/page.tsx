@@ -36,7 +36,7 @@ export default function CartPage() {
     setCouponError('');
     
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/storefront/validate-coupon?code=${couponInput}`, {
+      const res = await fetch(`http://localhost:8000/api/v1/storefront/validate-coupon?code=${couponInput}`, {
         method: 'POST'
       });
       

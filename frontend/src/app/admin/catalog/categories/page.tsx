@@ -5,6 +5,7 @@ import { Pencil, Trash2, Plus, Search, Image as ImageIcon, CheckCircle, XCircle,
 import IconPicker from '@/components/ui/IconPicker';
 import DynamicIcon from '@/components/ui/DynamicIcon';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import ImageUploader from '@/components/ui/ImageUploader';
 import { useAuth } from '@/context/AuthContext';
 
 interface Category {
@@ -45,7 +46,7 @@ export default function AdminCategories() {
   const fetchCategories = async (searchTerm = '') => {
     setLoading(true);
     try {
-      const url = new URL('http://127.0.0.1:8000/api/v1/catalog/categories');
+      const url = new URL('http://localhost:8000/api/v1/catalog/categories');
       if (searchTerm) url.searchParams.append('search', searchTerm);
       
       const response = await fetch(url.toString());
@@ -120,7 +121,7 @@ export default function AdminCategories() {
     if (!confirm('¿Estás seguro de eliminar esta categoría?')) return;
     
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/v1/catalog/categories/${id}`, {
+      const response = await fetch(`http://localhost:8000/api/v1/catalog/categories/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -152,8 +153,8 @@ export default function AdminCategories() {
 
       const method = editingCategory ? 'PUT' : 'POST';
       const url = editingCategory 
-        ? `http://127.0.0.1:8000/api/v1/catalog/categories/${editingCategory.id}`
-        : 'http://127.0.0.1:8000/api/v1/catalog/categories';
+        ? `http://localhost:8000/api/v1/catalog/categories/${editingCategory.id}`
+        : 'http://localhost:8000/api/v1/catalog/categories';
 
       const response = await fetch(url, {
         method,
@@ -227,7 +228,7 @@ export default function AdminCategories() {
           <button 
             onClick={() => handleOpenModal()}
             className="btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', padding: '12px 24px', fontSize: '1rem', fontWeight: 600 }}
           >
             <Plus size={18} /> Nueva Categoría
           </button>
@@ -260,7 +261,7 @@ export default function AdminCategories() {
         <div style={{ minWidth: '800px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
             <thead>
-              <tr style={{ background: 'var(--card-border)', borderBottom: '1px solid var(--card-border)' }}>
+              <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-muted)' }}>Ícono</th>
                 <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-muted)' }}>Nombre</th>
                 <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-muted)' }}>Configurador</th>
@@ -282,7 +283,7 @@ export default function AdminCategories() {
                       {category.image_url ? (
                         category.image_url.includes('/') || category.image_url.includes('.') ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={category.image_url} alt={category.name} style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '6px' }} />
+                          <img src={!category.image_url.startsWith('http') ? `http://localhost:8000${category.image_url.startsWith('/') ? '' : '/'}${category.image_url}` : category.image_url} alt={category.name} style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '6px' }} />
                         ) : (
                           <div style={{ width: '32px', height: '32px', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--primary)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <DynamicIcon name={category.image_url} size={20} />
@@ -343,13 +344,18 @@ export default function AdminCategories() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(4px)', padding: '16px' }}>
-          <div style={{ background: 'var(--background)', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', border: '1px solid var(--card-border)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <div style={{ padding: '24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '1.2rem' }}>{editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}</h2>
-              <button onClick={handleCloseModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><XCircle size={24} /></button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(8px)', padding: '16px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', position: 'relative', overflowX: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%)', filter: 'blur(20px)', zIndex: 0 }}></div>
+            
+            <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+              <h2 className="text-gradient" style={{ margin: 0, fontSize: '1.4rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Layers size={24} color="#8b5cf6" />
+                {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
+              </h2>
+              <button onClick={handleCloseModal} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(255,255,255,0.1)'} onMouseOut={e => e.currentTarget.style.background='transparent'}><XCircle size={24} /></button>
             </div>
-            <form onSubmit={handleSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', zIndex: 1 }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Nombre *</label>
                 <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', outline: 'none' }} />
@@ -359,11 +365,21 @@ export default function AdminCategories() {
                 <input type="text" value={formData.slug} onChange={e => setFormData({...formData, slug: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', outline: 'none' }} />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>URL de Imagen / Ícono</label>
-                <IconPicker 
-                  value={formData.image_url} 
-                  onChange={(val) => setFormData({...formData, image_url: val})} 
-                />
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Imagen o Ícono de Categoría</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <ImageUploader 
+                    currentImageUrl={formData.image_url?.includes('/') || formData.image_url?.includes('.') ? formData.image_url : undefined}
+                    onUploadSuccess={(url) => setFormData({...formData, image_url: url})}
+                  />
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', position: 'relative' }}>
+                    <span style={{ background: 'var(--card-bg)', padding: '0 10px', position: 'relative', zIndex: 1 }}>O selecciona un ícono vectorial:</span>
+                    <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid var(--card-border)', zIndex: 0 }}></div>
+                  </div>
+                  <IconPicker 
+                    value={formData.image_url} 
+                    onChange={(val) => setFormData({...formData, image_url: val})} 
+                  />
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Palabras Clave (Para Mapeo Automático)</label>
@@ -405,8 +421,8 @@ export default function AdminCategories() {
                 <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', outline: 'none', resize: 'vertical' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
-                <button type="button" onClick={handleCloseModal} style={{ padding: '10px 20px', borderRadius: '8px', background: 'transparent', border: '1px solid var(--card-border)', color: 'var(--text-color)', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" disabled={saving} style={{ padding: '10px 20px', borderRadius: '8px', background: 'var(--accent-color)', border: 'none', color: 'white', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 500 }}>
+                <button type="button" onClick={handleCloseModal} style={{ padding: '10px 20px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-color)', cursor: 'pointer', fontWeight: 500 }}>Cancelar</button>
+                <button type="submit" disabled={saving} className="btn-primary" style={{ padding: '10px 20px', borderRadius: '8px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', color: 'white', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
                   {saving ? 'Guardando...' : 'Guardar Categoría'}
                 </button>
               </div>

@@ -25,13 +25,13 @@ export default function TeamPage() {
     setLoading(true);
     try {
       // Fetch Team
-      const resTeam = await fetch('http://127.0.0.1:8000/api/v1/users/team', {
+      const resTeam = await fetch('http://localhost:8000/api/v1/users/team', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resTeam.ok) setMembers(await resTeam.json());
 
       // Fetch Roles para el dropdown
-      const resRoles = await fetch('http://127.0.0.1:8000/api/v1/roles/', {
+      const resRoles = await fetch('http://localhost:8000/api/v1/roles/', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resRoles.ok) {
@@ -57,7 +57,7 @@ export default function TeamPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/users/team', {
+      const res = await fetch('http://localhost:8000/api/v1/users/team', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -82,7 +82,7 @@ export default function TeamPage() {
   const handleDelete = async (id: number, name: string) => {
     if (confirm(`¿Estás seguro de desactivar a ${name}? Ya no podrá iniciar sesión.`)) {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/v1/users/${id}`, {
+        const res = await fetch(`http://localhost:8000/api/v1/users/${id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -111,17 +111,17 @@ export default function TeamPage() {
           </p>
         </div>
         
-        <button onClick={openNewModal} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+        <button onClick={openNewModal} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', borderRadius: '8px', fontWeight: 600, color: 'white', boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)' }}>
           <UserPlus size={18} /> Agregar Colaborador
         </button>
       </header>
 
-      <div className="glass-panel" style={{ padding: '24px', animation: 'fadeIn 0.3s ease-out' }}>
-
-      <div className="table-responsive-wrapper">
+      <div className="glass-panel" style={{ padding: '24px', animation: 'fadeIn 0.3s ease-out', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-150px', right: '-150px', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none', zIndex: 0 }}></div>
+      <div className="table-responsive-wrapper" style={{ position: 'relative', zIndex: 1 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+            <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-secondary)' }}>
               <th style={{ padding: '1rem', fontWeight: 600 }}>Usuario</th>
               <th style={{ padding: '1rem', fontWeight: 600 }}>Rol Asignado</th>
               <th style={{ padding: '1rem', fontWeight: 600 }}>Estado</th>
@@ -133,7 +133,7 @@ export default function TeamPage() {
             {loading ? (
               <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center' }}>Cargando equipo...</td></tr>
             ) : members.map(member => (
-              <tr key={member.id} style={{ borderBottom: '1px solid var(--card-border)', transition: 'background 0.2s', opacity: member.is_active ? 1 : 0.5 }}>
+              <tr key={member.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', opacity: member.is_active ? 1 : 0.5 }}>
                 <td style={{ padding: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--accent-cyan))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
@@ -172,7 +172,7 @@ export default function TeamPage() {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                     {member.role !== 'Dueño' && member.role !== 'SuperAdmin' && member.is_active ? (
                       <>
-                        <button onClick={() => handleDelete(member.id, member.full_name)} className="action-btn" style={{ color: '#ef4444' }}>
+                        <button onClick={() => handleDelete(member.id, member.full_name)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Trash2 size={16} />
                         </button>
                       </>
@@ -195,54 +195,57 @@ export default function TeamPage() {
       </div>
 
       {isModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel" style={{ width: '400px', maxWidth: '90%', padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0 }}>Agregar Colaborador</h2>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--foreground)', cursor: 'pointer' }}><X /></button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="glass-panel" style={{ width: '400px', maxWidth: '90%', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15, 23, 42, 0.8)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }}></div>
+            <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-color)' }}>Agregar Colaborador</h2>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-color)', cursor: 'pointer', padding: '6px', borderRadius: '8px' }}><X size={20}/></button>
             </div>
             
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Nombre Completo</label>
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-color)' }}>Nombre Completo</label>
                 <input 
                   required 
                   type="text" 
                   value={formData.full_name} 
                   onChange={e => setFormData({...formData, full_name: e.target.value})} 
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--input-text)' }}
                 />
               </div>
 
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Correo Electrónico (Login)</label>
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-color)' }}>Correo Electrónico (Login)</label>
                 <input 
                   required 
                   type="email" 
                   value={formData.email} 
                   onChange={e => setFormData({...formData, email: e.target.value})} 
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--input-text)' }}
                 />
               </div>
 
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Contraseña Temporal</label>
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-color)' }}>Contraseña Temporal</label>
                 <input 
                   required 
                   type="text" 
                   placeholder="Ej: gamerloot2026"
                   value={formData.password} 
                   onChange={e => setFormData({...formData, password: e.target.value})} 
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--input-text)' }}
                 />
                 <small style={{ color: 'var(--text-secondary)' }}>Dale esta contraseña al colaborador para que inicie sesión.</small>
               </div>
 
               <div style={{ marginBottom: '25px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Asignar Rol</label>
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-color)' }}>Asignar Rol</label>
                 <select 
                   value={formData.role_id} 
                   onChange={e => setFormData({...formData, role_id: Number(e.target.value)})}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--input-text)', appearance: 'none', cursor: 'pointer' }}
                 >
                   {roles.map(r => (
                     <option key={r.id} value={r.id}>{r.name} - {r.description}</option>
@@ -250,10 +253,11 @@ export default function TeamPage() {
                 </select>
               </div>
 
-              <button type="submit" disabled={isSubmitting} className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+              <button type="submit" disabled={isSubmitting} className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', borderRadius: '8px', fontWeight: 600, color: 'white', boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)' }}>
                 {isSubmitting ? 'Guardando...' : <><Save size={20} /> Guardar Colaborador</>}
               </button>
             </form>
+            </div>
           </div>
         </div>
       )}

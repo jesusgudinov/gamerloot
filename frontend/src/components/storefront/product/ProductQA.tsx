@@ -30,7 +30,7 @@ export default function ProductQA({ productId }: ProductQAProps) {
   const [newQuestion, setNewQuestion] = useState("");
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/v1/interactions/questions/product/${productId}`)
+    fetch(`http://localhost:8000/api/v1/interactions/questions/product/${productId}`)
       .then(res => res.json())
       .then(data => {
         setQuestions(data);
@@ -45,7 +45,7 @@ export default function ProductQA({ productId }: ProductQAProps) {
   const handleAsk = () => {
     if (!newQuestion.trim()) return;
     
-    fetch(`http://127.0.0.1:8000/api/v1/interactions/questions/`, {
+    fetch(`http://localhost:8000/api/v1/interactions/questions/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

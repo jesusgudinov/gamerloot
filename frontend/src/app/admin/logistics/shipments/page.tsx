@@ -10,7 +10,7 @@ export default function ShipmentsPage() {
 
   useEffect(() => {
     // Simulamos la carga desde nuestro nuevo endpoint
-    fetch('http://127.0.0.1:8000/api/v1/shipping/shipments')
+    fetch('http://localhost:8000/api/v1/shipping/shipments')
       .then(res => res.json())
       .then(data => {
         if (data.success) setShipments(data.shipments);
@@ -58,22 +58,23 @@ export default function ShipmentsPage() {
         
         <div className="header-actions" style={{ display: 'flex', gap: '1rem' }}>
           <div className="input-group" style={{ position: 'relative', flex: 1 }}>
-            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input 
               type="text" 
               placeholder="Buscar envío..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ paddingLeft: '40px', width: '100%', minWidth: '250px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)', padding: '10px 14px 10px 40px', borderRadius: '8px' }} 
+              style={{ paddingLeft: '40px', width: '100%', minWidth: '250px', background: 'var(--input-bg)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-color)', padding: '12px 14px 12px 40px', borderRadius: '8px' }} 
             />
           </div>
-          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '8px', fontWeight: 600, color: 'white', padding: '12px 24px' }}>
             Sincronizar Estados
           </button>
         </div>
       </header>
       
-      <div className="glass-panel" style={{ padding: '24px', animation: 'fadeIn 0.3s ease-out' }}>
+      <div className="glass-panel" style={{ padding: '24px', animation: 'fadeIn 0.3s ease-out', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
         <style dangerouslySetInnerHTML={{__html: `
         @media (max-width: 768px) {
           .header-actions {
@@ -94,7 +95,7 @@ export default function ShipmentsPage() {
           Cargando envíos...
         </div>
       ) : shipments.length === 0 ? (
-        <div style={{ padding: '3rem', textAlign: 'center', background: 'var(--background)', borderRadius: '12px', border: '1px dashed var(--border)' }}>
+        <div style={{ padding: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)', position: 'relative', zIndex: 1 }}>
           <Package size={48} style={{ color: 'var(--text-secondary)', margin: '0 auto 1rem auto', opacity: 0.5 }} />
           <h3 style={{ fontSize: '1.25rem', color: 'var(--foreground)', marginBottom: '0.5rem' }}>No hay envíos registrados</h3>
           <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto' }}>
@@ -102,16 +103,16 @@ export default function ShipmentsPage() {
           </p>
         </div>
       ) : filteredShipments.length === 0 ? (
-        <div style={{ padding: '3rem', textAlign: 'center', background: 'var(--background)', borderRadius: '12px', border: '1px dashed var(--border)' }}>
+        <div style={{ padding: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)', position: 'relative', zIndex: 1 }}>
           <Search size={48} style={{ color: 'var(--text-secondary)', margin: '0 auto 1rem auto', opacity: 0.5 }} />
           <h3 style={{ fontSize: '1.25rem', color: 'var(--foreground)', marginBottom: '0.5rem' }}>No se encontraron resultados</h3>
           <p style={{ color: 'var(--text-secondary)' }}>Intenta con otros términos de búsqueda.</p>
         </div>
       ) : (
-        <div className="table-responsive-wrapper">
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
+        <div className="table-responsive-wrapper" style={{ position: 'relative', zIndex: 1 }}>
+          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-secondary)' }}>
+              <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
                 <th style={{ padding: '1rem' }}>Pedido / Cliente</th>
                 <th style={{ padding: '1rem' }}>Detalle / Envío</th>
                 <th style={{ padding: '1rem' }}>Paquetería / Guía</th>
@@ -121,7 +122,7 @@ export default function ShipmentsPage() {
             </thead>
             <tbody>
               {filteredShipments.map((shipment) => (
-                <tr key={shipment.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <tr key={shipment.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <td style={{ padding: '1rem' }}>
                     <div style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '4px' }}>{shipment.order_id}</div>
                     <div style={{ fontWeight: 500 }}>{shipment.client_name}</div>
@@ -163,15 +164,14 @@ export default function ShipmentsPage() {
                       <button 
                         onClick={() => handleDownloadPDF(shipment.label_url)}
                         title="Descargar PDF"
-                        className="action-btn"
-                        style={{ color: 'var(--primary)' }}
+                        style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--primary)', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         <FileDown size={18} />
                       </button>
                       <button 
                         onClick={() => handleSendToProvider(shipment.order_id)}
                         title="Enviar Guía a Proveedor"
-                        className="action-btn"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-color)', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         <Send size={18} />
                       </button>

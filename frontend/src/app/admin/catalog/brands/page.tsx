@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { Pencil, Trash2, Plus, Search, Star, ExternalLink, Image as ImageIcon, CheckCircle, XCircle, Store } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 interface Brand {
   id: number;
@@ -39,7 +40,7 @@ export default function AdminBrands() {
   const fetchBrands = async (searchTerm = '') => {
     setLoading(true);
     try {
-      const url = new URL('http://127.0.0.1:8000/api/v1/catalog/brands');
+      const url = new URL('http://localhost:8000/api/v1/catalog/brands');
       if (searchTerm) url.searchParams.append('search', searchTerm);
       
       const response = await fetch(url.toString());
@@ -92,9 +93,16 @@ export default function AdminBrands() {
     e.preventDefault();
     setSaving(true);
     try {
+      const cleanSlug = formData.name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Quitar acentos
+        .replace(/[^a-z0-9]+/g, '-') // Letras y números solamente
+        .replace(/^-+|-+$/g, ''); // Quitar guiones extra
+        
       const payload = {
         name: formData.name,
-        slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
+        slug: formData.slug || cleanSlug,
         description: formData.description || null,
         image_url: formData.image_url || null,
         website_url: formData.website_url || null,
@@ -104,8 +112,8 @@ export default function AdminBrands() {
 
       const method = editingBrand ? 'PUT' : 'POST';
       const url = editingBrand 
-        ? `http://127.0.0.1:8000/api/v1/catalog/brands/${editingBrand.id}`
-        : 'http://127.0.0.1:8000/api/v1/catalog/brands';
+        ? `http://localhost:8000/api/v1/catalog/brands/${editingBrand.id}`
+        : 'http://localhost:8000/api/v1/catalog/brands';
 
       const response = await fetch(url, {
         method,
@@ -133,7 +141,7 @@ export default function AdminBrands() {
   const handleDelete = async (brand: Brand) => {
     if (!confirm(`¿Estás seguro de eliminar la marca "${brand.name}"?`)) return;
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/v1/catalog/brands/${brand.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      const response = await fetch(`http://localhost:8000/api/v1/catalog/brands/${brand.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (response.ok) {
         fetchBrands(search);
       } else {
@@ -147,7 +155,7 @@ export default function AdminBrands() {
 
   const toggleFeatured = async (brand: Brand) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/v1/catalog/brands/${brand.id}`, {
+      const response = await fetch(`http://localhost:8000/api/v1/catalog/brands/${brand.id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -210,7 +218,7 @@ export default function AdminBrands() {
           <button 
             onClick={() => handleOpenModal()}
             className="btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', padding: '12px 24px', fontSize: '1rem', fontWeight: 600 }}
           >
             <Plus size={18} /> Nueva Marca
           </button>
@@ -241,9 +249,9 @@ export default function AdminBrands() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
           {brands.map(brand => (
-            <div key={brand.id} style={{ background: 'var(--card-bg)', borderRadius: '16px', border: '1px solid var(--card-border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default' }} 
-                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.1)' }}
-                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}>
+            <div key={brand.id} className="glass-panel" style={{ borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s', cursor: 'default' }} 
+                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(139, 92, 246, 0.2)'; e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.4)'; }}
+                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--card-border)'; }}>
               
               {/* Botón Destacar (Estrella) */}
               <button 
@@ -258,7 +266,7 @@ export default function AdminBrands() {
               <div style={{ height: '140px', background: 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', borderBottom: '1px solid var(--card-border)' }}>
                 {brand.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={brand.image_url} alt={brand.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  <img src={!brand.image_url.startsWith('http') ? `http://localhost:8000${brand.image_url.startsWith('/') ? '' : '/'}${brand.image_url}` : brand.image_url} alt={brand.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                 ) : (
                   <ImageIcon size={48} style={{ opacity: 0.1 }} />
                 )}
@@ -300,14 +308,19 @@ export default function AdminBrands() {
 
       {/* Modal Crear/Editar */}
       {isModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(4px)', padding: '16px' }}>
-          <div style={{ background: 'var(--background)', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', border: '1px solid var(--card-border)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <div style={{ padding: '24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '1.2rem' }}>{editingBrand ? 'Editar Marca' : 'Nueva Marca'}</h2>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><XCircle size={24} /></button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(8px)', padding: '16px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', position: 'relative', overflowX: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%)', filter: 'blur(20px)', zIndex: 0 }}></div>
+            
+            <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+              <h2 className="text-gradient" style={{ margin: 0, fontSize: '1.4rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Store size={24} color="#8b5cf6" />
+                {editingBrand ? 'Editar Marca' : 'Nueva Marca'}
+              </h2>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(255,255,255,0.1)'} onMouseOut={e => e.currentTarget.style.background='transparent'}><XCircle size={24} /></button>
             </div>
             
-            <form onSubmit={handleSave} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleSave} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', zIndex: 1 }}>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 <div style={{ flex: '1 1 200px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Nombre *</label>
@@ -320,15 +333,14 @@ export default function AdminBrands() {
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>URL del Logotipo (Imagen)</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input type="url" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} placeholder="https://..." style={{ flex: 1, padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', outline: 'none' }} />
-                  {formData.image_url && (
-                    <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '8px', border: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={formData.image_url} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                    </div>
-                  )}
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Logotipo de la Marca</label>
+                <ImageUploader 
+                  currentImageUrl={formData.image_url}
+                  onUploadSuccess={(url) => setFormData({...formData, image_url: url})}
+                />
+                <div style={{ marginTop: '12px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>O introduce una URL externa manualmente:</label>
+                  <input type="text" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} placeholder="https://..." style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', outline: 'none' }} />
                 </div>
               </div>
 
@@ -361,8 +373,8 @@ export default function AdminBrands() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '10px 20px', borderRadius: '8px', background: 'transparent', border: '1px solid var(--card-border)', color: 'var(--text-color)', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" disabled={saving} style={{ padding: '10px 20px', borderRadius: '8px', background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))', border: 'none', color: 'white', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 500 }}>
+                <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '10px 20px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-color)', cursor: 'pointer', fontWeight: 500 }}>Cancelar</button>
+                <button type="submit" disabled={saving} className="btn-primary" style={{ padding: '10px 20px', borderRadius: '8px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', color: 'white', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
                   {saving ? 'Guardando...' : 'Guardar Marca'}
                 </button>
               </div>

@@ -25,12 +25,12 @@ function CatalogContent() {
   const [globalAttributes, setGlobalAttributes] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/v1/catalog/categories')
+    fetch('http://localhost:8000/api/v1/catalog/categories')
       .then(res => res.json())
       .then(data => setCategories(data))
       .catch(e => console.error(e));
 
-    fetch('http://127.0.0.1:8000/api/v1/catalog/attributes')
+    fetch('http://localhost:8000/api/v1/catalog/attributes')
       .then(res => res.json())
       .then(data => setGlobalAttributes(data))
       .catch(e => console.error(e));
@@ -38,7 +38,7 @@ function CatalogContent() {
 
   useEffect(() => {
     setLoadingProducts(true);
-    let url = `http://127.0.0.1:8000/api/v1/products/?size=100`;
+    let url = `http://localhost:8000/api/v1/products/?size=100`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     
     // Priority: Subcategory > Parent Category

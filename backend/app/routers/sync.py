@@ -19,8 +19,7 @@ router = APIRouter()
 SYNC_STATUS = {
     "woocommerce": {"status": "idle", "progress": 0, "message": "Listo"},
     "quantum": {"status": "idle", "progress": 0, "message": "Listo"},
-    "techsmart": {"status": "idle", "progress": 0, "message": "Listo"},
-    "syscom": {"status": "idle", "progress": 0, "message": "Listo"}
+    "techsmart": {"status": "idle", "progress": 0, "message": "Listo"}
 }
 
 class SyncStatusUpdate(BaseModel):
@@ -133,39 +132,6 @@ async def trigger_quantum_sync(background_tasks: BackgroundTasks, db: AsyncSessi
     """
     background_tasks.add_task(run_quantum_sync, db)
     return {"message": "Sincronización con Quantum Imports iniciada en segundo plano."}
-
-async def run_syscom_sync(db: AsyncSession):
-    from app.services.syscom import SyscomClient
-    SYNC_STATUS["syscom"] = {"status": "running", "progress": 5, "message": "Conectando a Syscom API..."}
-    
-    # Aquí deberías colocar tus credenciales reales o leerlas de .env
-    # settings.SYSCOM_CLIENT_ID / settings.SYSCOM_CLIENT_SECRET
-    client_id = getattr(settings, "SYSCOM_CLIENT_ID", "YOUR_CLIENT_ID")
-    client_secret = getattr(settings, "SYSCOM_CLIENT_SECRET", "YOUR_CLIENT_SECRET")
-    
-    client = SyscomClient(client_id, client_secret)
-    
-    def update_syscom_progress(progress_pct, msg):
-        SYNC_STATUS["syscom"] = {
-            "status": "running",
-            "progress": progress_pct,
-            "message": msg
-        }
-        
-    try:
-        updated = await client.sync_catalog(db, log_func=update_syscom_progress)
-        SYNC_STATUS["syscom"] = {"status": "done", "progress": 100, "message": f"Catálogo Syscom actualizado. {updated} productos cruzados."}
-    except Exception as e:
-        SYNC_STATUS["syscom"] = {"status": "error", "progress": 0, "message": f"Error: {str(e)}"}
-        print(f"❌ Error en Syscom: {e}")
-
-@router.post("/trigger/syscom")
-async def trigger_syscom_sync(background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
-    """
-    Desencadena la sincronización del catálogo maestro con Syscom API en segundo plano.
-    """
-    background_tasks.add_task(run_syscom_sync, db)
-    return {"message": "Motor de sincronización Syscom iniciado en segundo plano."}
 
 async def run_techsmart_sync(db: AsyncSession):
     from app.services.techsmart import TechSmartScraper

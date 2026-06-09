@@ -8,6 +8,9 @@ from app.models.product import Category, Product
 from app.models.inventory import Warehouse, InventoryStock
 from app.models.role import Role, Permission, RolePermission
 from app.models.mapping import SupplierCategoryMap, UnmappedCategoryLog
+from app.models.marketing import *
+from app.models.interaction import *
+from app.models.sales import *
 
 async def init_models():
     print("🔧 Conectando a Supabase para crear la estructura de tablas...")

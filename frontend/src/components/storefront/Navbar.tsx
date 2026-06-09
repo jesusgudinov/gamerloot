@@ -37,7 +37,7 @@ export default function Navbar() {
 
     const delayDebounceFn = setTimeout(() => {
       setIsSearching(true);
-      fetch(`http://127.0.0.1:8000/api/v1/products/?search=${encodeURIComponent(searchTerm)}&size=5`)
+      fetch(`http://localhost:8000/api/v1/products/?search=${encodeURIComponent(searchTerm)}&size=5`)
         .then(res => res.json())
         .then(data => {
           setSearchResults(data.items || []);
@@ -164,6 +164,12 @@ export default function Navbar() {
 
       {/* Right Side (Cart & Admin) */}
       <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+        <Link href="/configurator" className="hide-on-mobile" style={{ textDecoration: 'none' }}>
+          <div style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(16, 185, 129, 0.2))', border: '1px solid rgba(139, 92, 246, 0.5)', padding: '8px 16px', borderRadius: '20px', color: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 0 15px rgba(139, 92, 246, 0.2)', transition: 'all 0.3s ease' }}>
+            <span style={{ fontSize: '1.2rem' }}>⚡</span> Arma tu PC
+          </div>
+        </Link>
+
         <Link href="/cart" style={{ color: 'var(--foreground)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }} className="hide-on-mobile">
             <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--foreground)' }}>${cartTotal.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>

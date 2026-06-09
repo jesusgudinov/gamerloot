@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Search, Trash2, RefreshCw, BadgePercent } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function CouponsPage() {
+  const { token } = useAuth();
   const [coupons, setCoupons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -18,12 +20,15 @@ export default function CouponsPage() {
   });
 
   useEffect(() => {
-    fetchCoupons();
-  }, []);
+    if (token) fetchCoupons();
+  }, [token]);
 
   const fetchCoupons = async () => {
+    if (!token) return;
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/marketing/coupons');
+      const res = await fetch('http://localhost:8000/api/v1/marketing/coupons', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         setCoupons(await res.json());
       }
@@ -55,9 +60,12 @@ export default function CouponsPage() {
     };
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/marketing/coupons', {
+      const res = await fetch('http://localhost:8000/api/v1/marketing/coupons', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
@@ -76,7 +84,10 @@ export default function CouponsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro de eliminar este cupón?')) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/marketing/coupons/${id}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:8000/api/v1/marketing/coupons/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         fetchCoupons();
       }
@@ -91,9 +102,12 @@ export default function CouponsPage() {
     setCoupons(coupons.map(c => c.id === coupon.id ? { ...c, is_active: !c.is_active } : c));
     
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/marketing/coupons/${coupon.id}`, {
+      const res = await fetch(`http://localhost:8000/api/v1/marketing/coupons/${coupon.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ is_active: !coupon.is_active })
       });
       if (!res.ok) {
@@ -126,111 +140,116 @@ export default function CouponsPage() {
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No hay cupones creados aún.</div>
         ) : (
           <div className="table-responsive-wrapper">
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="admin-table">
               <thead>
-                <tr style={{ background: 'var(--card-border)', borderBottom: '1px solid var(--card-border)' }}>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Código</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Descuento</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Usos</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Estado</th>
-                <th style={{ padding: '16px', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {coupons.map((coupon) => (
-                <tr key={coupon.id} style={{ borderBottom: '1px solid var(--card-border)' }}>
-                  <td style={{ padding: '16px', fontWeight: 'bold', color: 'var(--primary)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <BadgePercent size={18} /> {coupon.code}
-                    </div>
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    {coupon.discount_type === 'percentage' ? `${coupon.discount_value}% OFF` : `$${coupon.discount_value} OFF`}
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    {coupon.times_used} / {coupon.usage_limit ? coupon.usage_limit : '∞'}
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div 
-                        onClick={() => handleToggleActive(coupon)}
-                        style={{ 
-                          width: '44px', height: '24px', borderRadius: '12px',
-                          background: coupon.is_active ? '#10b981' : 'var(--card-border)',
-                          position: 'relative', cursor: 'pointer', transition: '0.3s' 
-                        }}
-                      >
-                        <div style={{ 
-                          width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
-                          position: 'absolute', top: '3px', left: coupon.is_active ? '23px' : '3px', transition: '0.3s',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)' 
-                        }} />
-                      </div>
-                      <span style={{ fontSize: '0.85rem', color: coupon.is_active ? '#10b981' : 'var(--text-muted)' }}>
-                        {coupon.is_active ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '16px', textAlign: 'right' }}>
-                    <button onClick={() => handleDelete(coupon.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                      <Trash2 size={18} />
-                    </button>
-                  </td>
+                <tr>
+                  <th>Código</th>
+                  <th>Descuento</th>
+                  <th>Usos</th>
+                  <th>Estado</th>
+                  <th style={{ textAlign: 'right' }}>Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {coupons.map((coupon) => (
+                  <tr key={coupon.id}>
+                    <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <BadgePercent size={18} /> {coupon.code}
+                      </div>
+                    </td>
+                    <td>
+                      {coupon.discount_type === 'percentage' ? `${coupon.discount_value}% OFF` : `$${coupon.discount_value} OFF`}
+                    </td>
+                    <td>
+                      {coupon.times_used} / {coupon.usage_limit ? coupon.usage_limit : '∞'}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div 
+                          onClick={() => handleToggleActive(coupon)}
+                          style={{ 
+                            width: '44px', height: '24px', borderRadius: '12px',
+                            background: coupon.is_active ? '#10b981' : 'var(--card-border)',
+                            position: 'relative', cursor: 'pointer', transition: '0.3s' 
+                          }}
+                        >
+                          <div style={{ 
+                            width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
+                            position: 'absolute', top: '3px', left: coupon.is_active ? '23px' : '3px', transition: '0.3s',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)' 
+                          }} />
+                        </div>
+                        <span style={{ fontSize: '0.85rem', color: coupon.is_active ? '#10b981' : 'var(--text-muted)' }}>
+                          {coupon.is_active ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button onClick={() => handleDelete(coupon.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                        <Trash2 size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
       {/* Modal Nuevo Cupón */}
       {isModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(4px)' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', padding: '32px' }}>
-            <h2 style={{ margin: '0 0 24px 0', fontSize: '1.5rem', color: 'var(--foreground)' }}>Crear Nuevo Cupón</h2>
-            
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Código del Cupón *</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input type="text" required value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} style={{ flex: 1, padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', textTransform: 'uppercase' }} placeholder="Ej. GAMERLOOT10" />
-                  <button type="button" onClick={generateRandomCode} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <RefreshCw size={18} /> Aleatorio
-                  </button>
-                </div>
-              </div>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(8px)' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', padding: '32px', position: 'relative', overflow: 'hidden' }}>
+            {/* Brillo decorativo */}
+            <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, transparent 70%)', filter: 'blur(20px)', zIndex: 0 }}></div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <h2 style={{ margin: '0 0 24px 0', fontSize: '1.5rem', color: 'var(--foreground)' }}>Crear Nuevo Cupón</h2>
+              
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Tipo de Descuento</label>
-                  <select value={formData.discount_type} onChange={e => setFormData({...formData, discount_type: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }}>
-                    <option value="percentage">Porcentaje (%)</option>
-                    <option value="fixed">Monto Fijo ($)</option>
-                  </select>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Código del Cupón *</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input type="text" required value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} style={{ flex: 1, textTransform: 'uppercase' }} placeholder="Ej. GAMERLOOT10" />
+                    <button type="button" onClick={generateRandomCode} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px' }}>
+                      <RefreshCw size={18} /> Aleatorio
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Valor *</label>
-                  <input type="number" step="0.01" required value={formData.discount_value} onChange={e => setFormData({...formData, discount_value: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} />
-                </div>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Compra Mínima ($)</label>
-                  <input type="number" step="0.01" value={formData.min_purchase_amount} onChange={e => setFormData({...formData, min_purchase_amount: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} placeholder="Opcional" />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tipo de Descuento</label>
+                    <select value={formData.discount_type} onChange={e => setFormData({...formData, discount_type: e.target.value})} style={{ width: '100%', cursor: 'pointer' }}>
+                      <option value="percentage">Porcentaje (%)</option>
+                      <option value="fixed">Monto Fijo ($)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Valor *</label>
+                    <input type="number" step="0.01" required value={formData.discount_value} onChange={e => setFormData({...formData, discount_value: e.target.value})} style={{ width: '100%' }} />
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Límite de Usos Totales</label>
-                  <input type="number" value={formData.usage_limit} onChange={e => setFormData({...formData, usage_limit: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} placeholder="Infinito" />
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary">Cancelar</button>
-                <button type="submit" className="btn-primary">Guardar Cupón</button>
-              </div>
-            </form>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Compra Mínima ($)</label>
+                    <input type="number" step="0.01" value={formData.min_purchase_amount} onChange={e => setFormData({...formData, min_purchase_amount: e.target.value})} style={{ width: '100%' }} placeholder="Opcional" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Límite de Usos Totales</label>
+                    <input type="number" value={formData.usage_limit} onChange={e => setFormData({...formData, usage_limit: e.target.value})} style={{ width: '100%' }} placeholder="Infinito" />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--card-border)' }}>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary">Cancelar</button>
+                  <button type="submit" className="btn-primary">Guardar Cupón</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

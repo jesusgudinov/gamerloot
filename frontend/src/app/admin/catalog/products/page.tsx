@@ -74,7 +74,7 @@ export default function AdminProducts() {
 
   const handleQuickEdit = async (productId: number, field: string, value: any) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/products/${productId}/quick-edit`, {
+      const res = await fetch(`http://localhost:8000/api/v1/products/${productId}/quick-edit`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ export default function AdminProducts() {
 
   const fetchBrands = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/catalog/brands`);
+      const res = await fetch(`http://localhost:8000/api/v1/catalog/brands`);
       if (res.ok) {
         const data = await res.json();
         setAvailableBrands(data);
@@ -119,7 +119,7 @@ export default function AdminProducts() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/catalog/categories');
+      const res = await fetch('http://localhost:8000/api/v1/catalog/categories');
       if (res.ok) {
         setCategories(await res.json());
       }
@@ -131,7 +131,7 @@ export default function AdminProducts() {
   const fetchProducts = async (page = 1) => {
     setLoading(true);
     try {
-      let url = new URL(`http://127.0.0.1:8000/api/v1/products/`);
+      let url = new URL(`http://localhost:8000/api/v1/products/`);
       url.searchParams.append('page', page.toString());
       url.searchParams.append('size', pageSize.toString());
       
@@ -169,7 +169,7 @@ export default function AdminProducts() {
 
   const handleToggleFeatured = async (productId: number, currentStatus: boolean) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/products/bulk-edit`, {
+      const res = await fetch(`http://localhost:8000/api/v1/products/bulk-edit`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ export default function AdminProducts() {
   const handleDelete = async (productId: number, productName: string) => {
     if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el producto "${productName}"? Esta acción no se puede deshacer.`)) {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/v1/products/${productId}`, {
+        const res = await fetch(`http://localhost:8000/api/v1/products/${productId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -323,17 +323,17 @@ export default function AdminProducts() {
         </div>
         
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={handleExport} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button onClick={handleExport} style={{ padding: '10px 16px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500, transition: 'all 0.2s' }}>
             <Download size={18} /> Exportar
           </button>
-          <Link href="/admin/catalog/products/new" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+          <Link href="/admin/catalog/products/new" className="btn-primary" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', padding: '10px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', fontWeight: 600 }}>
             <Plus size={18} /> Agregar Producto
           </Link>
         </div>
       </header>
 
       {/* Basic Filters UI */}
-      <div className="glass-panel animate-fade-in-up delay-100" style={{ padding: '20px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className="glass-panel animate-fade-in-up delay-100" style={{ padding: '20px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '20px', borderRadius: '12px', border: '1px solid var(--card-border)' }}>
         <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ flex: '1 1 250px' }}>
             <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 600 }}>Buscar</label>
@@ -451,7 +451,7 @@ export default function AdminProducts() {
             <span style={{ fontWeight: 600 }}>productos seleccionados</span>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button onClick={() => setShowBulkModal(true)} className="btn-primary" style={{ padding: '10px 20px' }}>
+            <button onClick={() => setShowBulkModal(true)} className="btn-primary" style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', padding: '10px 20px', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600 }}>
               <FileEdit size={16} /> Editar Masivamente
             </button>
             <button onClick={() => setSelectedIds([])} className="btn-secondary" style={{ padding: '10px 20px', border: 'none', background: 'transparent' }}>
@@ -465,7 +465,7 @@ export default function AdminProducts() {
         <div style={{ minWidth: '1000px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
-            <tr style={{ background: 'var(--card-border)', borderBottom: '1px solid var(--card-border)' }}>
+            <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <th style={{ padding: '16px', width: '40px' }}>
                 <input type="checkbox" onChange={toggleAll} checked={products.length > 0 && selectedIds.length === products.length} />
               </th>
@@ -505,7 +505,7 @@ export default function AdminProducts() {
                       {product.main_image_url ? (
                         <div style={{ width: '48px', height: '48px', minWidth: '48px', borderRadius: '8px', overflow: 'hidden', background: 'var(--input-bg)', border: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <img 
-                            src={product.main_image_url} 
+                            src={!product.main_image_url.startsWith('http') ? `http://localhost:8000${product.main_image_url.startsWith('/') ? '' : '/'}${product.main_image_url}` : product.main_image_url} 
                             alt={product.name} 
                             style={{ width: '100%', height: '100%', objectFit: 'cover', color: 'transparent', fontSize: '0' }} 
                             onError={(e) => {
@@ -628,7 +628,7 @@ export default function AdminProducts() {
         />
 
         {/* Pagination Controls */}
-        <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', borderTop: '1px solid var(--card-border)', background: 'var(--card-border)' }}>
+        <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Mostrar:</span>
             <select 

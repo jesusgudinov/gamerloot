@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const meRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me', {
+        const meRes = await fetch('http://localhost:8000/api/v1/auth/me', {
           credentials: 'include'
         });
         
@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     try {
-      await fetch('http://127.0.0.1:8000/api/v1/auth/logout', {
+      await fetch('http://localhost:8000/api/v1/auth/logout', {
         method: 'POST',
         credentials: 'include'
       });

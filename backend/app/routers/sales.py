@@ -13,6 +13,9 @@ from app.schemas.sales import OrderCreate, OrderResponse, OrderUpdate
 
 from collections import defaultdict
 from datetime import datetime
+import csv
+from io import StringIO
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
@@ -160,6 +163,24 @@ async def create_order(order_in: OrderCreate, db: AsyncSession = Depends(get_db)
         
     await db.commit()
     
+    # Recalcular LTV del usuario
+    from sqlalchemy import func
+    ltv_stmt = select(func.sum(Order.total)).where(
+        Order.user_id == new_order.user_id,
+        Order.status.notin_(["Cancelado", "Cotización"])
+    )
+    new_ltv = (await db.execute(ltv_stmt)).scalar() or 0.0
+    user_to_update = await db.get(User, new_order.user_id)
+    if user_to_update:
+        user_to_update.total_spent = new_ltv
+        # 1 USD/MXN = 1 XP
+        user_to_update.xp = int(new_ltv)
+        # 10,000 XP per level (example scale for Gamer Loot)
+        new_level = 1 + (user_to_update.xp // 10000)
+        user_to_update.level = new_level
+        db.add(user_to_update)
+        await db.commit()
+        
     stmt = select(Order).options(selectinload(Order.items)).where(Order.id == new_order.id)
     result = await db.execute(stmt)
     return result.scalar_one()
@@ -238,5 +259,118 @@ async def update_order(id: int, order_update: OrderUpdate, db: AsyncSession = De
             )
 
     await db.commit()
+    
+    # Recalcular LTV del usuario
+    from sqlalchemy import func
+    ltv_stmt = select(func.sum(Order.total)).where(
+        Order.user_id == order.user_id,
+        Order.status.notin_(["Cancelado", "Cotización"])
+    )
+    new_ltv = (await db.execute(ltv_stmt)).scalar() or 0.0
+    user_to_update = await db.get(User, order.user_id)
+    if user_to_update:
+        user_to_update.total_spent = new_ltv
+        # 1 USD/MXN = 1 XP
+        user_to_update.xp = int(new_ltv)
+        # 10,000 XP per level
+        new_level = 1 + (user_to_update.xp // 10000)
+        user_to_update.level = new_level
+        db.add(user_to_update)
+        await db.commit()
+
     await db.refresh(order)
     return order
+
+@router.get("/reports/dashboard")
+async def get_sales_reports_dashboard(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    query = select(Order)
+    if start_date:
+        query = query.where(Order.created_at >= datetime.fromisoformat(start_date))
+    if end_date:
+        query = query.where(Order.created_at <= datetime.fromisoformat(end_date))
+        
+    orders_res = await db.execute(query.options(selectinload(Order.items)))
+    orders = orders_res.scalars().all()
+    
+    valid_orders = [o for o in orders if o.status not in ["Cancelado", "Cotización"]]
+    total_revenue = sum(o.total for o in valid_orders)
+    total_orders_count = len(valid_orders)
+    aov = total_revenue / total_orders_count if total_orders_count > 0 else 0
+    
+    daily_sales = defaultdict(lambda: {"revenue": 0, "orders": 0})
+    status_counts = defaultdict(int)
+    
+    for o in orders:
+        status_counts[o.status] += 1
+        if o.status not in ["Cancelado", "Cotización"]:
+            day_str = o.created_at.strftime("%Y-%m-%d") if o.created_at else "Unknown"
+            daily_sales[day_str]["revenue"] += o.total
+            daily_sales[day_str]["orders"] += 1
+            
+    sales_over_time = [{"date": k, "revenue": v["revenue"], "orders": v["orders"]} for k, v in sorted(daily_sales.items())]
+    sales_by_status = [{"status": k, "count": v} for k, v in status_counts.items()]
+    
+    product_sales = defaultdict(lambda: {"qty": 0, "revenue": 0, "name": ""})
+    for o in valid_orders:
+        for item in o.items:
+            product_sales[item.product_id]["qty"] += item.quantity
+            product_sales[item.product_id]["revenue"] += item.total_price
+            product_sales[item.product_id]["name"] = item.product_name
+            
+    top_products = [{"product_id": k, "name": v["name"], "qty": v["qty"], "revenue": v["revenue"]} for k, v in product_sales.items()]
+    top_products = sorted(top_products, key=lambda x: x["revenue"], reverse=True)[:10]
+    
+    return {
+        "kpis": {
+            "total_revenue": total_revenue,
+            "total_orders": total_orders_count,
+            "aov": aov
+        },
+        "sales_over_time": sales_over_time,
+        "sales_by_status": sales_by_status,
+        "top_products": top_products
+    }
+
+@router.get("/reports/export")
+async def export_sales_report(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    query = select(Order).options(selectinload(Order.items)).order_by(desc(Order.created_at))
+    if start_date:
+        query = query.where(Order.created_at >= datetime.fromisoformat(start_date))
+    if end_date:
+        query = query.where(Order.created_at <= datetime.fromisoformat(end_date))
+        
+    res = await db.execute(query)
+    orders = res.scalars().all()
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Folio", "Fecha", "Cliente", "Estado", "Articulos", "Subtotal", "Impuestos", "Total", "Status"])
+    
+    for o in orders:
+        items_str = " | ".join([f"{i.quantity}x {i.product_name}" for i in o.items])
+        writer.writerow([
+            o.folio,
+            o.created_at.strftime("%Y-%m-%d %H:%M") if o.created_at else "",
+            o.customer_name,
+            o.state or "",
+            items_str,
+            o.subtotal,
+            o.tax,
+            o.total,
+            o.status
+        ])
+        
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=sales_report.csv"}
+    )

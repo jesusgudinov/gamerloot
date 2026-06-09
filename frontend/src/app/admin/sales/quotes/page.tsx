@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { useAuth } from '@/context/AuthContext';
 
 export default function QuoteGeneratorPage() {
   const router = useRouter();
+  const { token } = useAuth();
   
   // Form state
   const [customerName, setCustomerName] = useState('');
@@ -18,8 +20,8 @@ export default function QuoteGeneratorPage() {
   const [folio] = useState(`LOOT-${Math.floor(Math.random() * 900000) + 100000}`);
   
   // Product Selection
-  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   // Cart
@@ -28,18 +30,28 @@ export default function QuoteGeneratorPage() {
   const quoteRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    const delayDebounceFn = setTimeout(() => {
+      if (search.trim().length > 0) {
+        fetchSearchResults(search);
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
 
-  const fetchProducts = async () => {
+    return () => clearTimeout(delayDebounceFn);
+  }, [search, token]);
+
+  const fetchSearchResults = async (term: string) => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/products/?page=1&size=1000');
+      const res = await fetch(`http://localhost:8000/api/v1/products/?page=1&size=15&search=${encodeURIComponent(term)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
-        setAllProducts(data.items || data);
+        setSearchResults(data.items || []);
       }
     } catch (e) {
-      console.error("Failed to fetch products", e);
+      console.error(e);
     }
   };
 
@@ -91,10 +103,7 @@ export default function QuoteGeneratorPage() {
     }
   };
 
-  const filteredProducts = allProducts.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
-    p.sku.toLowerCase().includes(search.toLowerCase())
-  ).slice(0, 10);
+
 
   return (
     <div style={{ width: '100%', display: 'flex', gap: '32px' }}>
@@ -113,20 +122,20 @@ export default function QuoteGeneratorPage() {
           </div>
         </header>
 
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <h3 style={{ margin: '0 0 16px 0' }}>Datos del Cliente</h3>
+        <div className="glass-panel" style={{ padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <h3 style={{ margin: '0 0 16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>Datos del Cliente</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Nombre / Razón Social *</label>
-              <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--bg-color)', color: 'var(--text-color)' }} />
+              <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Teléfono</label>
-              <input type="text" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--bg-color)', color: 'var(--text-color)' }} />
+              <input type="text" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Vía de Contacto</label>
-              <select value={contactMethod} onChange={e => setContactMethod(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--bg-color)', color: 'var(--text-color)' }}>
+              <select value={contactMethod} onChange={e => setContactMethod(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }}>
                 <option>Whatsapp</option>
                 <option>Correo Electrónico</option>
                 <option>Facebook</option>
@@ -135,13 +144,13 @@ export default function QuoteGeneratorPage() {
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Vigencia de Cotización</label>
-              <input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--bg-color)', color: 'var(--text-color)' }} />
+              <input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} />
             </div>
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '24px', overflow: 'visible' }}>
-          <h3 style={{ margin: '0 0 16px 0' }}>Buscador de Productos</h3>
+        <div className="glass-panel" style={{ padding: '24px', overflow: 'visible', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <h3 style={{ margin: '0 0 16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>Buscador de Productos</h3>
           <div style={{ position: 'relative' }}>
             <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
             <input 
@@ -150,19 +159,19 @@ export default function QuoteGeneratorPage() {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setIsSearchOpen(true); }}
               onFocus={() => setIsSearchOpen(true)}
-              style={{ width: '100%', padding: '10px 10px 10px 40px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--bg-color)', color: 'var(--text-color)' }}
+              style={{ width: '100%', padding: '10px 10px 10px 40px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }}
             />
             {isSearchOpen && search && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '8px', background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(12px)', border: '1px solid var(--card-border)', borderRadius: '8px', zIndex: 100, maxHeight: '300px', overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
-                {filteredProducts.length === 0 ? (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '8px', background: 'var(--card-bg)', backdropFilter: 'blur(12px)', border: '1px solid var(--card-border)', borderRadius: '8px', zIndex: 100, maxHeight: '300px', overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+                {searchResults.length === 0 ? (
                   <div style={{ padding: '16px', color: 'var(--text-muted)', textAlign: 'center' }}>No se encontraron productos</div>
                 ) : (
-                  filteredProducts.map(p => (
+                  searchResults.map(p => (
                     <div 
                       key={p.id} 
                       onClick={() => addToCart(p)}
                       style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--card-border)'}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       <div>
@@ -180,9 +189,9 @@ export default function QuoteGeneratorPage() {
           {/* Cart Table */}
           {cart.length > 0 && (
             <div className="table-responsive-wrapper" style={{ marginTop: '24px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+              <table className="admin-table">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--card-border)' }}>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
                     <th style={{ padding: '8px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 500 }}>Producto</th>
                     <th style={{ padding: '8px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 500, width: '100px' }}>Cant.</th>
                     <th style={{ padding: '8px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 500 }}>Precio</th>
@@ -198,7 +207,7 @@ export default function QuoteGeneratorPage() {
                         <div style={{ fontSize: '0.9rem' }}>{item.product_name}</div>
                       </td>
                       <td style={{ padding: '12px 8px', textAlign: 'center' }}>
-                        <input type="number" min="1" value={item.quantity} onChange={e => updateQuantity(item.product_id, parseInt(e.target.value) || 1)} style={{ width: '60px', padding: '6px', borderRadius: '4px', border: '1px solid var(--card-border)', background: 'var(--bg-color)', color: 'var(--text-color)', textAlign: 'center' }} />
+                        <input type="number" min="1" value={item.quantity} onChange={e => updateQuantity(item.product_id, parseInt(e.target.value) || 1)} style={{ width: '60px', padding: '6px', borderRadius: '4px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', textAlign: 'center' }} />
                       </td>
                       <td style={{ padding: '12px 8px', textAlign: 'right', color: 'var(--text-muted)' }}>${item.unit_price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                       <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold' }}>${(item.unit_price * item.quantity).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
@@ -218,8 +227,8 @@ export default function QuoteGeneratorPage() {
       <div style={{ width: '600px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
         {/* Acciones */}
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', gap: '16px' }}>
-          <button onClick={handleExportPDF} className="btn-primary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', gap: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <button onClick={handleExportPDF} className="btn-primary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '8px', fontWeight: 600, color: 'white', padding: '12px' }}>
             <Printer size={18} /> Exportar Documento PDF
           </button>
         </div>

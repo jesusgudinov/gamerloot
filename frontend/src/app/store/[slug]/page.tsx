@@ -12,13 +12,13 @@ export default function BrandStorefront({ params }: { params: Promise<{ slug: st
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/v1/catalog/brands`)
+    fetch(`http://localhost:8000/api/v1/catalog/brands`)
       .then(res => res.json())
       .then(data => {
         const foundBrand = data.find((b: any) => b.slug === slug);
         if (foundBrand) {
           setBrand(foundBrand);
-          fetch(`http://127.0.0.1:8000/api/v1/products/?size=50`)
+          fetch(`http://localhost:8000/api/v1/products/?size=50`)
             .then(r => r.json())
             .then(pData => {
               setProducts(pData.items.filter((p: any) => p.brand_relation?.slug === slug));

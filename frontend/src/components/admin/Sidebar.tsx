@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Box, Truck, Megaphone, ChevronDown, ChevronRight, Package, ListTree, Tags, BadgeCheck, PlugZap, ShoppingBag, FileText, Users, LogOut, Network } from 'lucide-react';
+import { LayoutDashboard, Box, Truck, Megaphone, ChevronDown, ChevronRight, Package, ListTree, Tags, BadgeCheck, PlugZap, ShoppingBag, FileText, Users, LogOut, Network, Activity, RotateCcw } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 
@@ -57,6 +57,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }: { isOpen
       subLinks: [
         { href: '/admin/sales/orders', icon: Package, label: 'Pedidos' },
         { href: '/admin/sales/quotes', icon: FileText, label: 'Cotizar' },
+        { href: '/admin/sales/reports', icon: Activity, label: 'Reporte de ventas' },
+        { href: '/admin/sales/rma', icon: RotateCcw, label: 'RMA y Devoluciones' },
       ]
     },
     { href: '/admin/clients', icon: Users, label: 'Suite de Clientes' },
@@ -96,14 +98,17 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }: { isOpen
   ];
 
   return (
-    <aside className={`glass-panel mobile-drawer ${isOpen ? 'open' : ''}`} style={{ width: '280px', height: 'calc(100vh - 40px)', position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', padding: '24px', flexShrink: 0, zIndex: 1000 }}>
-      <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }} className="desktop-only">
-        <div>
-          <h2 style={{ color: 'var(--foreground)', fontSize: '1.75rem', fontWeight: 800, marginBottom: '4px' }}>Gamer Loot</h2>
-          <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 400 }}>Centro de administración</span>
+    <aside className={`glass-panel mobile-drawer ${isOpen ? 'open' : ''}`} style={{ width: '280px', height: 'calc(100vh - 40px)', position: 'sticky', top: '20px', display: 'flex', flexDirection: 'column', padding: '24px', flexShrink: 0, zIndex: 1000, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px' }}>
+      <div style={{ position: 'absolute', top: '-100px', left: '-100px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none', zIndex: 0 }}></div>
+      
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }} className="desktop-only">
+          <div>
+            <h2 style={{ color: 'var(--foreground)', fontSize: '1.75rem', fontWeight: 800, marginBottom: '4px' }}>Gamer Loot</h2>
+            <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 400 }}>Centro de administración</span>
+          </div>
+          <ThemeToggle />
         </div>
-        <ThemeToggle />
-      </div>
       
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, overflowY: 'auto' }}>
         {menuItems.map((item) => {
@@ -130,14 +135,16 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }: { isOpen
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <item.icon size={20} />
-                    <span>{item.label}</span>
+                    <div style={{ flexShrink: 0, display: 'flex' }}><item.icon size={20} /></div>
+                    <span style={{ textAlign: 'left', lineHeight: '1.2' }}>{item.label}</span>
                   </div>
-                  {isOpenState ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                  <div style={{ flexShrink: 0 }}>
+                    {isOpenState ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                  </div>
                 </button>
                 
                 {isOpenState && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '20px', borderLeft: '2px solid var(--card-border)', marginLeft: '26px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '20px', borderLeft: '2px solid rgba(255,255,255,0.1)', marginLeft: '26px' }}>
                     {item.subLinks?.map((subLink) => {
                       const isActive = pathname === subLink.href;
                       return (
@@ -159,8 +166,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }: { isOpen
                             boxShadow: isActive ? '0 4px 14px rgba(106, 17, 203, 0.4)' : 'none'
                           }}
                         >
-                          <subLink.icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-                          <span style={{ fontSize: '0.9rem' }}>{subLink.label}</span>
+                          <div style={{ flexShrink: 0, display: 'flex' }}><subLink.icon size={16} strokeWidth={isActive ? 2.5 : 2} /></div>
+                          <span style={{ fontSize: '0.9rem', lineHeight: '1.2' }}>{subLink.label}</span>
                         </Link>
                       );
                     })}
@@ -191,14 +198,14 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }: { isOpen
                 boxShadow: isActive ? '0 4px 14px rgba(106, 17, 203, 0.4)' : 'none'
               }}
             >
-              <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-              {item.label}
+              <div style={{ flexShrink: 0, display: 'flex' }}><Icon size={20} strokeWidth={isActive ? 2.5 : 2} /></div>
+              <span style={{ lineHeight: '1.2' }}>{item.label}</span>
             </Link>
           );
         })}
       </nav>
       
-      <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid var(--card-border)' }}>
+      <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--accent-cyan))', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>
@@ -213,6 +220,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }: { isOpen
         <button onClick={logout} style={{ width: '100%', padding: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
           <LogOut size={16} /> Cerrar Sesión
         </button>
+      </div>
       </div>
     </aside>
   );

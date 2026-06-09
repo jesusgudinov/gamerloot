@@ -13,9 +13,7 @@ from app.schemas.interaction import (
     ReviewCreate, ReviewUpdateStatus, ReviewResponse,
     QuestionCreate, QuestionAnswer, QuestionReject, QuestionResponse
 )
-# auth dependencies are typically available
-# for admin we might not have them fully strict right now so we'll just mock auth or use existing
-# from app.core.security import get_current_user
+from app.api.deps import get_current_active_user, require_permissions
 
 router = APIRouter()
 
@@ -34,11 +32,12 @@ def contains_profanity(text: str) -> bool:
 # --- REVIEWS ---
 
 @router.post("/reviews/", response_model=ReviewResponse)
-async def create_review(review: ReviewCreate, db: AsyncSession = Depends(get_db)):
-    # Use the first available user in the database to avoid foreign key errors
-    user_query = await db.execute(select(User).limit(1))
-    mock_user = user_query.scalars().first()
-    user_id = mock_user.id if mock_user else 1
+async def create_review(
+    review: ReviewCreate, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    user_id = current_user.id
     
     # Filtro de groserías
     status = "REJECTED" if contains_profanity(review.comment) else "PENDING"
@@ -66,7 +65,7 @@ async def get_product_reviews(product_id: int, db: AsyncSession = Depends(get_db
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.get("/reviews/admin", response_model=List[ReviewResponse])
+@router.get("/reviews/admin", response_model=List[ReviewResponse], dependencies=[Depends(require_permissions(["manage_catalog"]))])
 async def get_all_reviews(status: str = None, db: AsyncSession = Depends(get_db)):
     query = select(Review).order_by(desc(Review.created_at))
     if status:
@@ -75,7 +74,7 @@ async def get_all_reviews(status: str = None, db: AsyncSession = Depends(get_db)
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.patch("/reviews/{review_id}/status")
+@router.patch("/reviews/{review_id}/status", dependencies=[Depends(require_permissions(["manage_catalog"]))])
 async def update_review_status(review_id: int, status_update: ReviewUpdateStatus, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Review).where(Review.id == review_id))
     review = result.scalars().first()
@@ -99,11 +98,12 @@ async def update_review_status(review_id: int, status_update: ReviewUpdateStatus
 # --- QUESTIONS ---
 
 @router.post("/questions/", response_model=QuestionResponse)
-async def create_question(question: QuestionCreate, db: AsyncSession = Depends(get_db)):
-    # Use the first available user to avoid foreign key errors
-    user_query = await db.execute(select(User).limit(1))
-    mock_user = user_query.scalars().first()
-    user_id = mock_user.id if mock_user else 1
+async def create_question(
+    question: QuestionCreate, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    user_id = current_user.id
     
     status = "REJECTED" if contains_profanity(question.question_text) else "PENDING"
     
@@ -129,7 +129,7 @@ async def get_product_questions(product_id: int, db: AsyncSession = Depends(get_
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.get("/questions/admin", response_model=List[QuestionResponse])
+@router.get("/questions/admin", response_model=List[QuestionResponse], dependencies=[Depends(require_permissions(["manage_catalog"]))])
 async def get_all_questions(status: str = None, db: AsyncSession = Depends(get_db)):
     query = select(Question).order_by(desc(Question.created_at))
     if status:
@@ -138,7 +138,7 @@ async def get_all_questions(status: str = None, db: AsyncSession = Depends(get_d
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.patch("/questions/{question_id}/answer")
+@router.patch("/questions/{question_id}/answer", dependencies=[Depends(require_permissions(["manage_catalog"]))])
 async def answer_question(question_id: int, answer: QuestionAnswer, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Question).where(Question.id == question_id))
     question = result.scalars().first()
@@ -152,7 +152,7 @@ async def answer_question(question_id: int, answer: QuestionAnswer, db: AsyncSes
     await db.commit()
     return {"success": True}
 
-@router.patch("/questions/{question_id}/reject")
+@router.patch("/questions/{question_id}/reject", dependencies=[Depends(require_permissions(["manage_catalog"]))])
 async def reject_question(question_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Question).where(Question.id == question_id))
     question = result.scalars().first()

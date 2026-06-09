@@ -62,7 +62,40 @@ class OrderItem(Base):
     sku = Column(String, nullable=False)
     product_name = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False)
-    unit_price = Column(Float, nullable=False) 
+    unit_price = Column(Float, nullable=False)
     total_price = Column(Float, nullable=False)
     
     order = relationship("Order", back_populates="items")
+    product = relationship("Product")
+
+class RMARequest(Base):
+    __tablename__ = "sales_rmas"
+    id = Column(Integer, primary_key=True, index=True)
+    folio = Column(String, unique=True, index=True, nullable=False) # Ej. RMA-98765
+    order_id = Column(Integer, ForeignKey("sales_orders.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Pendiente, Aprobado, Rechazado, Recibido, Reembolsado, Reemplazado
+    status = Column(String, default="Pendiente", index=True) 
+    rma_type = Column(String, nullable=False) # "Devolución" o "Garantía"
+    
+    customer_reason = Column(Text, nullable=False)
+    admin_notes = Column(Text, nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    order = relationship("Order")
+    items = relationship("RMAItem", back_populates="rma", cascade="all, delete-orphan")
+
+class RMAItem(Base):
+    __tablename__ = "sales_rma_items"
+    id = Column(Integer, primary_key=True, index=True)
+    rma_id = Column(Integer, ForeignKey("sales_rmas.id"), nullable=False)
+    order_item_id = Column(Integer, ForeignKey("sales_order_items.id"), nullable=False)
+    
+    quantity = Column(Integer, nullable=False)
+    condition = Column(String, nullable=True) # Intacto, Abierto, Dañado, Defectuoso
+    
+    rma = relationship("RMARequest", back_populates="items")
+    order_item = relationship("OrderItem")

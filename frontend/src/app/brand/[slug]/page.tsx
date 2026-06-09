@@ -15,7 +15,7 @@ export default function GenericBrandPage({ params }: { params: Promise<{ slug: s
   useEffect(() => {
     // We would need an endpoint to fetch brand by slug, or fetch all and find.
     // For now, let's fetch products with a search or category logic, or we can just fetch all products and filter by brand slug.
-    fetch(`http://127.0.0.1:8000/api/v1/catalog/brands`)
+    fetch(`http://localhost:8000/api/v1/catalog/brands`)
       .then(res => res.json())
       .then(data => {
         const foundBrand = data.find((b: any) => b.slug === slug);
@@ -23,7 +23,7 @@ export default function GenericBrandPage({ params }: { params: Promise<{ slug: s
           setBrand(foundBrand);
           // In a real scenario we'd query /products?brand_id=...
           // For now let's just fetch all products and filter (mock)
-          fetch(`http://127.0.0.1:8000/api/v1/products/?size=50`)
+          fetch(`http://localhost:8000/api/v1/products/?size=50`)
             .then(r => r.json())
             .then(pData => {
               setProducts(pData.items.filter((p: any) => p.brand_relation?.slug === slug));

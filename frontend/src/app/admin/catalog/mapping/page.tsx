@@ -41,9 +41,9 @@ export default function MappingPage() {
   const fetchData = async () => {
     try {
       const [resUnmapped, resCats, resMaps] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/v1/mapping/unmapped', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('http://127.0.0.1:8000/api/v1/catalog/categories', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('http://127.0.0.1:8000/api/v1/mapping/maps', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch('http://localhost:8000/api/v1/mapping/unmapped', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('http://localhost:8000/api/v1/catalog/categories', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('http://localhost:8000/api/v1/mapping/maps', { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
       const dataUnmapped = await resUnmapped.json();
       const dataCats = await resCats.json();
@@ -67,7 +67,7 @@ export default function MappingPage() {
     }
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/mapping/map', {
+      const res = await fetch('http://localhost:8000/api/v1/mapping/map', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ export default function MappingPage() {
         delete newMaps[unmapped_id];
         setSelectedMaps(newMaps);
         // Recargar mapas activos
-        const mapsRes = await fetch('http://127.0.0.1:8000/api/v1/mapping/maps', { headers: { 'Authorization': `Bearer ${token}` } });
+        const mapsRes = await fetch('http://localhost:8000/api/v1/mapping/maps', { headers: { 'Authorization': `Bearer ${token}` } });
         setActiveMaps(await mapsRes.json());
       } else {
         showToast('Error al mapear', 'error');
@@ -95,7 +95,7 @@ export default function MappingPage() {
 
   const handleIgnore = async (unmapped_id: number) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/mapping/unmapped/${unmapped_id}`, {
+      const res = await fetch(`http://localhost:8000/api/v1/mapping/unmapped/${unmapped_id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -110,7 +110,7 @@ export default function MappingPage() {
 
   const handleDeleteMap = async (map_id: number) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/mapping/maps/${map_id}`, {
+      const res = await fetch(`http://localhost:8000/api/v1/mapping/maps/${map_id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

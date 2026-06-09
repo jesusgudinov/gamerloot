@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Eye, User, Mail, Phone, Trophy, DollarSign, X, Edit, Ban } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ClientsPage() {
+  const { token } = useAuth();
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -12,17 +14,20 @@ export default function ClientsPage() {
   const [viewingClient, setViewingClient] = useState<any>(null);
 
   useEffect(() => {
-    fetchClients();
-  }, [search, filter]);
+    if (token) fetchClients();
+  }, [search, filter, token]);
 
   const fetchClients = async () => {
     setLoading(true);
     try {
-      let url = new URL('http://127.0.0.1:8000/api/v1/clients');
+      let url = new URL('http://localhost:8000/api/v1/clients');
       if (search) url.searchParams.append('q', search);
       // Faltaría implementar lógica de filtros en backend o filtrarlos aquí en frontend por ahora
       
-      const res = await fetch(url.toString(), { cache: 'no-store' });
+      const res = await fetch(url.toString(), { 
+        cache: 'no-store',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         let data = await res.json();
         
@@ -60,13 +65,14 @@ export default function ClientsPage() {
           <p style={{ color: 'var(--text-muted)' }}>Visualiza y administra a tu comunidad de Gamers.</p>
         </div>
         <Link href="/admin/clients/create" style={{ textDecoration: 'none' }}>
-          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }}>
+          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '8px', fontWeight: 600, color: 'white', boxShadow: '0 0 15px rgba(139, 92, 246, 0.4)' }}>
             <Plus size={20} /> Añadir Cliente Manual
           </button>
         </Link>
       </header>
 
-      <div className="glass-panel" style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px' }}>
+      <div className="glass-panel" style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
         <div style={{ position: 'relative' }}>
           <Search size={20} color="var(--text-muted)" style={{ position: 'absolute', left: '16px', top: '14px' }} />
           <input 
@@ -74,7 +80,7 @@ export default function ClientsPage() {
             placeholder="Buscar por Nickname, Nombre, Correo, RFC..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ width: '100%', padding: '12px 12px 12px 48px', borderRadius: '12px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem' }}
+            style={{ width: '100%', padding: '12px 12px 12px 48px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem', position: 'relative', zIndex: 1 }}
           />
         </div>
         <div style={{ position: 'relative' }}>
@@ -82,7 +88,7 @@ export default function ClientsPage() {
           <select 
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            style={{ padding: '12px 48px', borderRadius: '12px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem', appearance: 'none', minWidth: '200px', cursor: 'pointer' }}
+            style={{ padding: '12px 48px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem', appearance: 'none', minWidth: '200px', cursor: 'pointer', position: 'relative', zIndex: 1 }}
           >
             <option value="">Todos los Clientes</option>
             <option value="buyers">Solo Compradores</option>
@@ -92,11 +98,12 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      <div className="glass-panel" style={{ overflow: 'hidden' }}>
-        <div className="table-responsive-wrapper">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="glass-panel" style={{ overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '-150px', left: '-100px', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none', zIndex: 0 }}></div>
+        <div className="table-responsive-wrapper" style={{ position: 'relative', zIndex: 1 }}>
+          <table className="admin-table">
             <thead>
-              <tr style={{ background: 'var(--card-border)' }}>
+              <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Jugador</th>
                 <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Contacto</th>
                 <th style={{ padding: '16px', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)' }}>Rango</th>
@@ -118,7 +125,7 @@ export default function ClientsPage() {
                 clients.map((client) => {
                   const rank = getGamerRank(client.total_spent);
                   return (
-                    <tr key={client.id} style={{ borderBottom: '1px solid var(--card-border)' }}>
+                    <tr key={client.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'relative', zIndex: 1 }}>
                       <td style={{ padding: '16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--card-bg)', border: '2px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
@@ -163,14 +170,14 @@ export default function ClientsPage() {
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                           <button 
                             onClick={() => setViewingClient(client)}
-                            className="action-btn"
+                            style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--primary)', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             title="Ver Detalles del Jugador"
                           >
                             <Eye size={18} />
                           </button>
                           <Link href={`/admin/clients/${client.id}/edit`}>
                             <button 
-                              className="action-btn"
+                              style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-color)', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                               title="Editar Perfil"
                             >
                               <Edit size={18} />
@@ -190,7 +197,7 @@ export default function ClientsPage() {
       {viewingClient && (
         <>
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', zIndex: 999 }} onClick={() => setViewingClient(null)} />
-          <div className="glass-panel" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: '500px', zIndex: 1000, borderRadius: '0', borderLeft: '1px solid var(--card-border)', padding: '32px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)' }}>
+          <div className="glass-panel" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: '500px', zIndex: 1000, borderRadius: '0', borderLeft: '1px solid rgba(255,255,255,0.1)', padding: '32px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px', background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)', boxShadow: '-10px 0 25px rgba(0,0,0,0.5)' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -220,7 +227,7 @@ export default function ClientsPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', border: '1px solid var(--card-border)' }}>
+              <div style={{ background: 'var(--input-bg)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <p style={{ margin: '0 0 4px 0', color: 'var(--text-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <DollarSign size={16} /> Total Gastado
                 </p>
@@ -228,7 +235,7 @@ export default function ClientsPage() {
                   ${viewingClient.total_spent.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                 </div>
               </div>
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', border: '1px solid var(--card-border)' }}>
+              <div style={{ background: 'var(--input-bg)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <p style={{ margin: '0 0 4px 0', color: 'var(--text-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Trophy size={16} /> Rango Gamer
                 </p>
@@ -239,7 +246,7 @@ export default function ClientsPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', borderBottom: '1px solid var(--card-border)', paddingBottom: '8px' }}>Información de Contacto</h3>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>Información de Contacto</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', fontSize: '0.95rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Correo:</span>
@@ -261,11 +268,11 @@ export default function ClientsPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', borderBottom: '1px solid var(--card-border)', paddingBottom: '8px' }}>Libreta de Direcciones</h3>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>Libreta de Direcciones</h3>
               {viewingClient.addresses && viewingClient.addresses.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {viewingClient.addresses.map((addr: any) => (
-                    <div key={addr.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--card-border)', borderRadius: '8px' }}>
+                    <div key={addr.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span style={{ fontWeight: 'bold', color: 'var(--primary)', fontSize: '0.9rem' }}>{addr.alias || 'Dirección Principal'}</span>
                         {addr.is_default && <span style={{ fontSize: '0.7rem', background: 'var(--primary)', color: '#ffffff', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Predeterminada</span>}
@@ -284,7 +291,7 @@ export default function ClientsPage() {
                   ))}
                 </div>
               ) : (
-                <div style={{ padding: '16px', textAlign: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', color: 'var(--text-muted)' }}>
+                <div style={{ padding: '16px', textAlign: 'center', background: 'var(--input-bg)', borderRadius: '8px', color: 'var(--text-muted)' }}>
                   Este cliente no tiene direcciones registradas.
                 </div>
               )}

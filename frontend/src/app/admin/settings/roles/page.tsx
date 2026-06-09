@@ -26,13 +26,13 @@ export default function RolesPage() {
     setLoading(true);
     try {
       // Fetch Roles
-      const resRoles = await fetch('http://127.0.0.1:8000/api/v1/roles/', {
+      const resRoles = await fetch('http://localhost:8000/api/v1/roles/', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resRoles.ok) setRoles(await resRoles.json());
 
       // Fetch Permissions
-      const resPerms = await fetch('http://127.0.0.1:8000/api/v1/roles/permissions', {
+      const resPerms = await fetch('http://localhost:8000/api/v1/roles/permissions', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resPerms.ok) setAvailablePermissions(await resPerms.json());
@@ -73,8 +73,8 @@ export default function RolesPage() {
     setIsSubmitting(true);
 
     const url = editingRole 
-      ? `http://127.0.0.1:8000/api/v1/roles/${editingRole.id}`
-      : `http://127.0.0.1:8000/api/v1/roles/`;
+      ? `http://localhost:8000/api/v1/roles/${editingRole.id}`
+      : `http://localhost:8000/api/v1/roles/`;
       
     const method = editingRole ? 'PUT' : 'POST';
 
@@ -104,7 +104,7 @@ export default function RolesPage() {
   const handleDelete = async (id: number, name: string) => {
     if (confirm(`¿Estás seguro de eliminar el rol ${name}?`)) {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/v1/roles/${id}`, {
+        const res = await fetch(`http://localhost:8000/api/v1/roles/${id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -135,16 +135,16 @@ export default function RolesPage() {
           </p>
         </div>
         
-        <button onClick={openNewModal} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button onClick={openNewModal} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '8px', fontWeight: 600, color: 'white', boxShadow: '0 0 15px rgba(139, 92, 246, 0.4)' }}>
           <Plus size={18} /> Nuevo Rol
         </button>
       </header>
 
-      <div className="glass-panel" style={{ padding: '24px', animation: 'fadeIn 0.3s ease-out' }}>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+      <div className="glass-panel" style={{ padding: '24px', animation: 'fadeIn 0.3s ease-out', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-150px', right: '-150px', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none', zIndex: 0 }}></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem', position: 'relative', zIndex: 1 }}>
         {roles.map(role => (
-          <div key={role.id} style={{ background: 'var(--background)', border: '1px solid var(--border)', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+          <div key={role.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ShieldCheck size={20} color="var(--primary)" />
@@ -152,8 +152,8 @@ export default function RolesPage() {
               </div>
               {role.name !== 'Dueño' && (
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => openEditModal(role)} className="action-btn" title="Editar Rol"><Edit2 size={16}/></button>
-                  <button onClick={() => handleDelete(role.id, role.name)} className="action-btn" style={{ color: '#ef4444' }} title="Eliminar Rol"><Trash2 size={16}/></button>
+                  <button onClick={() => openEditModal(role)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-color)', padding: '6px', borderRadius: '6px', cursor: 'pointer' }} title="Editar Rol"><Edit2 size={16}/></button>
+                  <button onClick={() => handleDelete(role.id, role.name)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', padding: '6px', borderRadius: '6px', cursor: 'pointer' }} title="Eliminar Rol"><Trash2 size={16}/></button>
                 </div>
               )}
             </div>
@@ -187,39 +187,41 @@ export default function RolesPage() {
 
       {/* Modal Crear/Editar Rol */}
       {isModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel" style={{ width: '500px', maxWidth: '90%', padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0 }}>{editingRole ? 'Editar Rol' : 'Nuevo Rol'}</h2>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--foreground)', cursor: 'pointer' }}><X /></button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="glass-panel" style={{ width: '500px', maxWidth: '90%', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15, 23, 42, 0.8)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }}></div>
+            <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-color)' }}>{editingRole ? 'Editar Rol' : 'Nuevo Rol'}</h2>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-color)', cursor: 'pointer', padding: '6px', borderRadius: '8px' }}><X size={20}/></button>
             </div>
             
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Nombre del Rol</label>
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-color)' }}>Nombre del Rol</label>
                 <input 
                   required 
                   type="text" 
                   value={formData.name} 
                   onChange={e => setFormData({...formData, name: e.target.value})} 
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--input-text)' }}
                 />
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Descripción</label>
+                <label style={{ display: 'block', marginBottom: '5px', color: 'var(--text-color)' }}>Descripción</label>
                 <input 
                   required 
                   type="text" 
                   value={formData.description} 
                   onChange={e => setFormData({...formData, description: e.target.value})} 
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'var(--input-bg)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--input-text)' }}
                 />
               </div>
 
               <div style={{ marginBottom: '30px' }}>
-                <label style={{ display: 'block', marginBottom: '10px' }}>Permisos del Sistema</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '250px', overflowY: 'auto', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', color: 'var(--text-color)' }}>Permisos del Sistema</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '250px', overflowY: 'auto', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                   {availablePermissions.map(p => (
                     <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <div className="toggle-switch">
@@ -231,7 +233,7 @@ export default function RolesPage() {
                         <span className="toggle-slider"></span>
                       </div>
                       <div>
-                        <div style={{ fontWeight: 500, color: 'var(--foreground)' }}>{p.name}</div>
+                        <div style={{ fontWeight: 500, color: 'var(--text-color)' }}>{p.name}</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{p.description}</div>
                       </div>
                     </label>
@@ -239,10 +241,11 @@ export default function RolesPage() {
                 </div>
               </div>
 
-              <button type="submit" disabled={isSubmitting} className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+              <button type="submit" disabled={isSubmitting} className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '10px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '8px', fontWeight: 600, color: 'white', boxShadow: '0 0 15px rgba(139, 92, 246, 0.4)' }}>
                 {isSubmitting ? 'Guardando...' : <><Save size={20} /> Guardar Rol</>}
               </button>
             </form>
+            </div>
           </div>
         </div>
       )}

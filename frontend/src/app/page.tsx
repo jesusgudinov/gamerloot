@@ -18,31 +18,31 @@ export default function Home() {
 
   useEffect(() => {
     // Fetch Banners
-    fetch('http://127.0.0.1:8000/api/v1/storefront/banners')
+    fetch('http://localhost:8000/api/v1/storefront/banners')
       .then(r => r.json())
       .then(data => setBanners(data || []))
       .catch(e => console.error(e));
 
     // Fetch Campaigns
-    fetch('http://127.0.0.1:8000/api/v1/storefront/campaigns')
+    fetch('http://localhost:8000/api/v1/storefront/campaigns')
       .then(r => r.json())
       .then(data => setCampaigns(data || []))
       .catch(e => console.error(e));
 
     // Fetch Offer Products (Has Discount)
-    fetch('http://127.0.0.1:8000/api/v1/products/?size=16&status=PUBLISHED&has_discount=true')
+    fetch('http://localhost:8000/api/v1/products/?size=16&status=PUBLISHED&has_discount=true')
       .then(r => r.json())
       .then(data => setOfferProducts(data.items || []))
       .catch(e => console.error(e));
 
     // Fetch Featured Products (is_featured = true)
-    fetch('http://127.0.0.1:8000/api/v1/products/?size=16&status=PUBLISHED&is_featured=true')
+    fetch('http://localhost:8000/api/v1/products/?size=16&status=PUBLISHED&is_featured=true')
       .then(r => r.json())
       .then(data => setFeaturedProducts(data.items || []))
       .catch(e => console.error(e));
 
     // Fetch Brands
-    fetch('http://127.0.0.1:8000/api/v1/catalog/brands')
+    fetch('http://localhost:8000/api/v1/catalog/brands')
       .then(r => r.json())
       .then(data => setBrands(data.filter((b: any) => b.is_featured) || []))
       .catch(e => console.error(e));

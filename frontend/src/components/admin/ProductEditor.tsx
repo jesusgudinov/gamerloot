@@ -9,6 +9,9 @@ import {
 import Link from 'next/link';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import MultiSearchableSelect from '@/components/ui/MultiSearchableSelect';
+import ImageUploader from '@/components/ui/ImageUploader';
+import ImageGalleryUploader from '@/components/ui/ImageGalleryUploader';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 
 interface ProductEditorProps {
   productId: string | 'new';
@@ -49,7 +52,7 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
     meta_title: '',
     meta_description: '',
     main_image_url: '',
-    image_gallery: '',
+    image_gallery: [],
     marketing_tag_ids: [],
     attribute_value_ids: []
   });
@@ -74,10 +77,10 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
   const fetchCatalogs = async () => {
     try {
       const [catRes, brandRes, tagRes, attrRes] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/v1/catalog/categories', { credentials: 'include' }),
-        fetch('http://127.0.0.1:8000/api/v1/catalog/brands', { credentials: 'include' }),
-        fetch('http://127.0.0.1:8000/api/v1/catalog/marketing-tags', { credentials: 'include' }),
-        fetch('http://127.0.0.1:8000/api/v1/catalog/attributes', { credentials: 'include' })
+        fetch('http://localhost:8000/api/v1/catalog/categories', { credentials: 'include' }),
+        fetch('http://localhost:8000/api/v1/catalog/brands', { credentials: 'include' }),
+        fetch('http://localhost:8000/api/v1/catalog/marketing-tags', { credentials: 'include' }),
+        fetch('http://localhost:8000/api/v1/catalog/attributes', { credentials: 'include' })
       ]);
       if (catRes.ok) setCategories(await catRes.json());
       if (brandRes.ok) setBrands(await brandRes.json());
@@ -90,7 +93,7 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
 
   const fetchProduct = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/products/id/${productId}`);
+      const res = await fetch(`http://localhost:8000/api/v1/products/id/${productId}`);
       if (res.ok) {
         const prod = await res.json();
         
@@ -100,13 +103,21 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
         
         setFormData({
           ...prod,
-          image_gallery: (prod.image_gallery || []).join(', '),
+          sku: prod.sku || '',
+          upc: prod.upc || '',
+          description: prod.description || '',
+          warranty_months: prod.warranty_months || '',
+          main_image_url: prod.main_image_url || '',
+          meta_title: prod.meta_title || '',
+          meta_description: prod.meta_description || '',
+          image_gallery: prod.image_gallery || [],
           short_description: prod.short_description || '',
           discount_price: prod.discount_price || '',
           discount_start_date: start,
           discount_end_date: end,
           category_id: prod.category_id || '',
           brand_id: prod.brand_id || '',
+          component_type: prod.component_type || '',
           marketing_tag_ids: prod.marketing_tags_relation?.map((t: any) => t.id) || [],
           attribute_value_ids: prod.attribute_values?.map((a: any) => a.id) || [],
           weight_kg: prod.weight_kg || '',
@@ -145,17 +156,14 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
         else payload[k] = parseFloat(payload[k]);
       });
 
-      if (typeof payload.image_gallery === 'string') {
-        payload.image_gallery = payload.image_gallery.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
-      }
-
       payload.base_price = parseFloat(payload.base_price);
       if (payload.category_id === '') payload.category_id = null;
       if (payload.brand_id === '') payload.brand_id = null;
+      if (payload.component_type === '') payload.component_type = null;
 
       const url = isNew 
-        ? 'http://127.0.0.1:8000/api/v1/products/' 
-        : `http://127.0.0.1:8000/api/v1/products/${productId}`;
+        ? 'http://localhost:8000/api/v1/products/' 
+        : `http://localhost:8000/api/v1/products/${productId}`;
         
       const res = await fetch(url, {
         method: isNew ? 'POST' : 'PUT',
@@ -210,7 +218,7 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
       const baseSlug = valueName.toLowerCase().trim().replace(/[\s\W-]+/g, '-');
       const slug = `${parentSlug}-${baseSlug}`;
       
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/catalog/attributes/${attrId}/values`, {
+      const res = await fetch(`http://localhost:8000/api/v1/catalog/attributes/${attrId}/values`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -292,11 +300,13 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
           box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.1);
         }
         .form-card {
-          background: var(--card-bg);
-          border: 1px solid var(--card-border);
-          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.02);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 16px;
           padding: 24px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
         .toggle-checkbox {
           appearance: none;
@@ -345,9 +355,9 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
       )}
 
       {/* Header Sticky */}
-      <div style={{ 
+      <div className="glass-panel" style={{ 
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-        padding: '20px', background: 'var(--card-bg)', borderBottom: '1px solid var(--card-border)',
+        padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)',
         borderRadius: '16px 16px 0 0', flexShrink: 0
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -360,14 +370,14 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <Link href="/admin/catalog/products" className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+          <Link href="/admin/catalog/products" style={{ padding: '10px 20px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', fontWeight: 500 }}>
             <X size={18} /> Cancelar
           </Link>
           <button 
             className="btn-primary" 
             onClick={handleSave}
             disabled={saving}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', opacity: saving ? 0.7 : 1 }}
+            style={{ padding: '10px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', opacity: saving ? 0.7 : 1, fontWeight: 600 }}
           >
             <Save size={18} /> {saving ? 'Guardando...' : 'Guardar Cambios'}
           </button>
@@ -375,11 +385,11 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
       </div>
 
       {/* Main Layout: Sidebar Tabs + Content */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', background: 'var(--card-bg)', borderRadius: '0 0 16px 16px', border: '1px solid var(--card-border)', borderTop: 'none' }}>
+      <div className="glass-panel" style={{ display: 'flex', flex: 1, overflow: 'hidden', borderRadius: '0 0 16px 16px', borderTop: 'none' }}>
         
         {/* Vertical Tabs */}
         <div style={{ 
-          width: '240px', borderRight: '1px solid var(--card-border)', 
+          width: '240px', borderRight: '1px solid rgba(255,255,255,0.05)', 
           padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '8px',
           overflowY: 'auto'
         }}>
@@ -392,7 +402,7 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
                 onClick={() => setActiveTab(tab.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '12px 24px', background: isActive ? 'var(--card-border)' : 'transparent',
+                  padding: '12px 24px', background: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
                   color: isActive ? 'var(--foreground)' : 'var(--text-muted)',
                   border: 'none', borderRight: isActive ? '3px solid var(--primary)' : '3px solid transparent',
                   cursor: 'pointer', textAlign: 'left', fontWeight: isActive ? 600 : 400,
@@ -406,13 +416,13 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
         </div>
 
         {/* Form Content */}
-        <div style={{ flex: 1, padding: '32px', overflowY: 'auto', background: 'var(--bg-color)' }}>
+        <div style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
           <div style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
             {/* --- TAB GENERAL --- */}
             {activeTab === 'general' && (
               <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>Información General</h2>
+                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>Información General</h2>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div>
@@ -450,23 +460,21 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>Descripción Corta</label>
-                  <textarea 
-                    className="premium-input"
-                    rows={3} 
+                  <RichTextEditor 
                     value={formData.short_description} 
-                    onChange={e => setFormData({...formData, short_description: e.target.value})} 
+                    onChange={val => setFormData({...formData, short_description: val})} 
                     placeholder="Resumen breve para destacar el producto en listados y SEO..."
+                    minHeight="100px"
                   />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>Descripción Completa</label>
-                  <textarea 
-                    className="premium-input"
-                    rows={8} 
+                  <RichTextEditor 
                     value={formData.description} 
-                    onChange={e => setFormData({...formData, description: e.target.value})} 
-                    placeholder="Aquí irá el editor Rich Text..."
+                    onChange={val => setFormData({...formData, description: val})} 
+                    placeholder="Describe todas las bondades y características de tu producto..."
+                    minHeight="250px"
                   />
                 </div>
               </div>
@@ -475,7 +483,7 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
             {/* --- TAB PRICING --- */}
             {activeTab === 'pricing' && (
               <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>Precios y Ofertas</h2>
+                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>Precios y Ofertas</h2>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div>
@@ -527,7 +535,7 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
             {/* --- TAB ORGANIZATION --- */}
             {activeTab === 'organization' && (
               <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>Organización</h2>
+                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>Organización</h2>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div>
@@ -593,7 +601,7 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
             {/* --- TAB SPECS & CONFIG --- */}
             {activeTab === 'specs' && (
               <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>Especificaciones y Configurador</h2>
+                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>Especificaciones y Configurador</h2>
                 
                 <div className="form-card glass-panel" style={{ background: formData.is_in_configurator ? 'rgba(99, 102, 241, 0.05)' : 'var(--card-bg)', border: formData.is_in_configurator ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid var(--card-border)' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', marginBottom: formData.is_in_configurator ? '20px' : 0 }}>
@@ -613,17 +621,19 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
                         <option value="MOTHERBOARD">Tarjeta Madre</option>
                         <option value="RAM">Memoria RAM</option>
                         <option value="GPU">Tarjeta de Video</option>
-                        <option value="STORAGE">Almacenamiento</option>
+                        <option value="SSD">Almacenamiento SSD</option>
+                        <option value="HDD">Disco Duro (HDD)</option>
                         <option value="PSU">Fuente de Poder</option>
                         <option value="CASE">Gabinete</option>
-                        <option value="COOLER">Enfriamiento</option>
+                        <option value="AIR_COOLING">Disipador</option>
+                        <option value="LIQUID_COOLING">Enfriamiento Líquido</option>
                       </select>
                     </div>
                   )}
                 </div>
 
                 <div className="form-card" style={{ padding: 0, overflow: 'visible' }}>
-                  <div style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px 12px 0 0', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px 16px 0 0', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}><Settings size={18} color="var(--primary)" /> Atributos Técnicos</h3>
                   </div>
                   
@@ -749,33 +759,27 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
             {/* --- TAB MEDIA --- */}
             {activeTab === 'media' && (
               <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>Multimedia</h2>
+                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>Multimedia</h2>
                 
                 <div className="form-card">
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>Imagen Principal (URL)</label>
-                  <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-                    <input type="text" className="premium-input" value={formData.main_image_url} onChange={e => setFormData({...formData, main_image_url: e.target.value})} placeholder="https://..." style={{ flex: 1 }} />
-                    <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: 'var(--input-bg)', border: '1px dashed var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                      {formData.main_image_url ? (
-                        <img src={formData.main_image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <ImageIcon size={24} color="var(--text-muted)" />
-                      )}
-                    </div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>Imagen Principal (Sube una imagen o usa una URL externa)</label>
+                  
+                  <ImageUploader 
+                    currentImageUrl={formData.main_image_url}
+                    onUploadSuccess={(url) => setFormData({...formData, main_image_url: url})}
+                  />
+                  
+                  <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>O introduce una URL de forma manual:</label>
+                    <input type="text" className="premium-input" value={formData.main_image_url} onChange={e => setFormData({...formData, main_image_url: e.target.value})} placeholder="https://..." style={{ width: '100%' }} />
                   </div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Info size={14} /> En el futuro esta sección permitirá arrastrar y soltar imágenes directamente.
-                  </p>
                 </div>
 
                 <div className="form-card">
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>Galería de Imágenes (URLs separadas por comas)</label>
-                  <textarea 
-                    className="premium-input"
-                    rows={4}
-                    value={formData.image_gallery || ''} 
-                    onChange={e => setFormData({...formData, image_gallery: e.target.value})} 
-                    placeholder="https://img1.jpg, https://img2.jpg..."
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>Galería de Imágenes (Sube las imágenes adicionales del producto)</label>
+                  <ImageGalleryUploader 
+                    images={formData.image_gallery || []}
+                    onChange={(urls) => setFormData({...formData, image_gallery: urls})}
                   />
                 </div>
               </div>
@@ -784,7 +788,7 @@ export default function ProductEditor({ productId }: ProductEditorProps) {
             {/* --- TAB LOGISTICS --- */}
             {activeTab === 'logistics' && (
               <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>Logística y Envíos</h2>
+                <h2 style={{ fontSize: '1.2rem', margin: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>Logística y Envíos</h2>
                 
                 <div className="form-card" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '20px' }}>
                   <div>

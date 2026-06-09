@@ -18,7 +18,7 @@ export default function AdminQuestions() {
   const fetchQuestions = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/interactions/questions/admin`, {
+      const res = await fetch(`http://localhost:8000/api/v1/interactions/questions/admin`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -34,7 +34,7 @@ export default function AdminQuestions() {
   const submitAnswer = async (id: number) => {
     if (!answerText.trim()) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/interactions/questions/${id}/answer`, {
+      const res = await fetch(`http://localhost:8000/api/v1/interactions/questions/${id}/answer`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ export default function AdminQuestions() {
 
   const rejectQuestion = async (id: number) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/interactions/questions/${id}/reject`, {
+      const res = await fetch(`http://localhost:8000/api/v1/interactions/questions/${id}/reject`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -104,7 +104,7 @@ export default function AdminQuestions() {
         </div>
       </div>
 
-      <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
+      <div className="glass-panel" style={{ padding: '0', overflow: 'hidden', borderRadius: '12px', border: '1px solid var(--card-border)' }}>
         <table className="admin-table">
           <thead>
             <tr>

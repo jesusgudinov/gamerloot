@@ -23,9 +23,9 @@ export default function AdminDashboard() {
     async function fetchAllStats() {
       try {
         const [salesRes, prodRes, mktRes] = await Promise.all([
-          fetch('http://127.0.0.1:8000/api/v1/sales/stats', { credentials: 'include' }).catch(() => null),
-          fetch('http://127.0.0.1:8000/api/v1/products/stats', { credentials: 'include' }).catch(() => null),
-          fetch('http://127.0.0.1:8000/api/v1/marketing/dashboard', { credentials: 'include' }).catch(() => null)
+          fetch('http://localhost:8000/api/v1/sales/stats', { credentials: 'include' }).catch(() => null),
+          fetch('http://localhost:8000/api/v1/products/stats', { credentials: 'include' }).catch(() => null),
+          fetch('http://localhost:8000/api/v1/marketing/dashboard', { credentials: 'include' }).catch(() => null)
         ]);
 
         if (salesRes && salesRes.ok) setSalesStats(await salesRes.json());
@@ -119,45 +119,54 @@ export default function AdminDashboard() {
       
       {/* Metrics Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
-        <div className="glass-panel hover-card animate-fade-in-up delay-100" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-            <div style={{ padding: '10px', background: 'rgba(106, 17, 203, 0.1)', borderRadius: '12px' }}>
-              <TrendingUp size={24} color="var(--primary)" />
+        <div className="glass-panel hover-card animate-fade-in-up delay-100" style={{ padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', filter: 'blur(20px)', pointerEvents: 'none', zIndex: 0 }}></div>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <div style={{ padding: '10px', background: 'rgba(106, 17, 203, 0.1)', borderRadius: '12px' }}>
+                <TrendingUp size={24} color="var(--primary)" />
+              </div>
             </div>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Ingresos Totales</p>
+            <h2 style={{ fontSize: '2rem' }}>${rev.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h2>
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Ingresos Totales</p>
-          <h2 style={{ fontSize: '2rem' }}>${rev.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h2>
         </div>
         
-        <div className="glass-panel hover-card animate-fade-in-up delay-200" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-            <div style={{ padding: '10px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '12px' }}>
-              <Package size={24} color="#f59e0b" />
+        <div className="glass-panel hover-card animate-fade-in-up delay-200" style={{ padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%)', filter: 'blur(20px)', pointerEvents: 'none', zIndex: 0 }}></div>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <div style={{ padding: '10px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '12px' }}>
+                <Package size={24} color="#f59e0b" />
+              </div>
+              {pending > 0 && (
+                <span style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '4px 8px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '6px', height: '6px', background: '#ef4444', borderRadius: '50%', display: 'inline-block' }}></span>
+                  Requiere Atención
+                </span>
+              )}
             </div>
-            {pending > 0 && (
-              <span style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '4px 8px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '6px', height: '6px', background: '#ef4444', borderRadius: '50%', display: 'inline-block' }}></span>
-                Requiere Atención
-              </span>
-            )}
-          </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Pedidos Pendientes</p>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-            <h2 style={{ fontSize: '2rem' }}>{pending}</h2>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>/ {salesStats?.shipped_orders || 0} Enviados</span>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Pedidos Pendientes</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+              <h2 style={{ fontSize: '2rem' }}>{pending}</h2>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>/ {salesStats?.shipped_orders || 0} Enviados</span>
+            </div>
           </div>
         </div>
 
-        <div className="glass-panel hover-card animate-fade-in-up delay-300" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-            <div style={{ padding: '10px', background: 'rgba(6, 182, 212, 0.1)', borderRadius: '12px' }}>
-              <Target size={24} color="var(--accent-cyan)" />
+        <div className="glass-panel hover-card animate-fade-in-up delay-300" style={{ padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%)', filter: 'blur(20px)', pointerEvents: 'none', zIndex: 0 }}></div>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <div style={{ padding: '10px', background: 'rgba(6, 182, 212, 0.1)', borderRadius: '12px' }}>
+                <Target size={24} color="var(--accent-cyan)" />
+              </div>
             </div>
-          </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Catálogo Activo</p>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-            <h2 style={{ fontSize: '2rem' }}>{productStats?.total_products || 0}</h2>
-            <span style={{ color: '#10b981', fontSize: '0.9rem' }}>Productos</span>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Catálogo Activo</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+              <h2 style={{ fontSize: '2rem' }}>{productStats?.total_products || 0}</h2>
+              <span style={{ color: '#10b981', fontSize: '0.9rem' }}>Productos</span>
+            </div>
           </div>
         </div>
       </div>
@@ -166,15 +175,17 @@ export default function AdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px', alignItems: 'start' }} className="responsive-dashboard-grid">
         
         {/* Chart Section */}
-        <div className="glass-panel animate-fade-in-up delay-400" style={{ padding: '24px', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '10px' }}>
-            <div>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '4px' }}>Rendimiento de Ventas</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Evolución de ingresos en tiempo real</p>
+        <div className="glass-panel animate-fade-in-up delay-400" style={{ padding: '24px', overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(139,92,246,0.05) 0%, transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0 }}></div>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', marginBottom: '4px' }}>Rendimiento de Ventas</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Evolución de ingresos en tiempo real</p>
+              </div>
             </div>
-          </div>
-          
-          <div style={{ width: '100%', height: 350 }}>
+            
+            <div style={{ width: '100%', height: 350 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={realChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
@@ -194,13 +205,14 @@ export default function AdminDashboard() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          </div>
         </div>
 
         {/* Actionable Alerts Panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade-in-up delay-500">
           
           {/* Alertas de Inventario (Actionable) */}
-          <div className="glass-panel" style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
+          <div className="glass-panel" style={{ padding: '24px', position: 'relative', overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: lowStock > 0 ? '#ef4444' : '#10b981' }}></div>
             
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', fontSize: '1.1rem' }}>
@@ -230,7 +242,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Marketing Quick Stats */}
-          <div className="glass-panel" style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
+          <div className="glass-panel" style={{ padding: '24px', position: 'relative', overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
              <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--accent-cyan)' }}></div>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', fontSize: '1.1rem' }}>
               <Megaphone size={20} color="var(--accent-cyan)" />
@@ -248,7 +260,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             
-            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--card-border)' }}>
+            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                <Link href="/admin/marketing/campaigns" style={{ textDecoration: 'none' }}>
                   <span style={{ color: 'var(--primary)', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                     Gestionar Campañas <ArrowRight size={14} />

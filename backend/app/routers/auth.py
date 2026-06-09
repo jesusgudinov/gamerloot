@@ -8,6 +8,7 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 from app.schemas.token import Token
 from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -53,10 +54,10 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         key="access_token",
         value=access_token,
         httponly=True,
-        max_age=1800, # 30 min por defecto, puede ser configurable
-        expires=1800,
+        max_age=28800, # 8 horas a petición del dueño
+        expires=28800,
         samesite="lax",
-        secure=False, # True en producción
+        secure=settings.ENVIRONMENT == "production", # Usar True solo en prod
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
@@ -93,32 +94,4 @@ async def get_my_profile(current_user: User = Depends(get_current_user)):
         "permissions": permissions
     }
 
-@router.post("/setup-admin")
-async def setup_admin(db: AsyncSession = Depends(get_db)):
-    """Endpoint para crear al superusuario principal inicial. Debe usarse solo una vez."""
-    from app.models.role import Role
-    res_role = await db.execute(select(Role).where(Role.name == "Dueño"))
-    owner_role = res_role.scalars().first()
-    
-    if not owner_role:
-        owner_role = Role(name="Dueño", description="Control total")
-        db.add(owner_role)
-        await db.flush()
-        
-    res_user = await db.execute(select(User).where(User.email == "jesus@gamerloot.com.mx"))
-    user = res_user.scalars().first()
-    
-    if not user:
-        user = User(
-            email="jesus@gamerloot.com.mx",
-            full_name="Gamer Loot",
-            hashed_password=get_password_hash("kP9#vX2$mL!wQ7*zB5&t"),
-            is_superuser=True,
-            is_active=True,
-            role_id=owner_role.id
-        )
-        db.add(user)
-        await db.commit()
-        return {"message": "Administrador creado exitosamente"}
-        
-    return {"message": "El administrador ya existe"}
+

@@ -73,3 +73,46 @@ class OrderResponse(OrderBase):
 
     class Config:
         from_attributes = True
+
+class RMAItemCreate(BaseModel):
+    order_item_id: int
+    quantity: int
+    condition: Optional[str] = None
+
+class RMAItemResponse(BaseModel):
+    id: int
+    rma_id: int
+    order_item_id: int
+    quantity: int
+    condition: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class RMACreate(BaseModel):
+    order_id: int
+    user_id: int
+    rma_type: str
+    customer_reason: str
+    items: List[RMAItemCreate]
+
+class RMAUpdate(BaseModel):
+    status: Optional[str] = None
+    admin_notes: Optional[str] = None
+    restock_to_inventory: Optional[bool] = False
+
+class RMAResponse(BaseModel):
+    id: int
+    folio: str
+    order_id: int
+    user_id: int
+    status: str
+    rma_type: str
+    customer_reason: str
+    admin_notes: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    items: List[RMAItemResponse]
+
+    class Config:
+        from_attributes = True

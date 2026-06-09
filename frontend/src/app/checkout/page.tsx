@@ -42,7 +42,7 @@ export default function CheckoutPage() {
     if (formData.zip.length !== 5) return;
     setIsQuoting(true);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/checkout/quote-shipping', {
+      const res = await fetch('http://localhost:8000/api/v1/checkout/quote-shipping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -87,7 +87,7 @@ export default function CheckoutPage() {
         coupon_discount: couponDiscount
       };
 
-      const res = await fetch('http://127.0.0.1:8000/api/v1/checkout/place-order', {
+      const res = await fetch('http://localhost:8000/api/v1/checkout/place-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

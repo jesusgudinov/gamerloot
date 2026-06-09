@@ -20,12 +20,12 @@ export default function BulkEditModal({ isOpen, onClose, selectedIds, onComplete
 
   useEffect(() => {
     if (isOpen) {
-      fetch('http://127.0.0.1:8000/api/v1/catalog/categories')
+      fetch('http://localhost:8000/api/v1/catalog/categories')
         .then(r => r.json())
         .then(data => setCategories(data))
         .catch(console.error);
 
-      fetch('http://127.0.0.1:8000/api/v1/catalog/brands')
+      fetch('http://localhost:8000/api/v1/catalog/brands')
         .then(r => r.json())
         .then(data => setBrands(data))
         .catch(console.error);
@@ -36,7 +36,7 @@ export default function BulkEditModal({ isOpen, onClose, selectedIds, onComplete
     if (!action) return;
     setLoading(true);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/products/bulk-edit', {
+      const res = await fetch('http://localhost:8000/api/v1/products/bulk-edit', {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',

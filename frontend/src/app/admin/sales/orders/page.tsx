@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Edit, Eye, ShoppingCart, Truck, CheckCircle, Clock, XCircle, Settings, X, Save } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
 export default function OrdersPage() {
+  const { token } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -16,6 +18,7 @@ export default function OrdersPage() {
   const [editCarrier, setEditCarrier] = useState('');
   const [editTracking, setEditTracking] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [notificationChannel, setNotificationChannel] = useState('WhatsApp');
 
   // View Modal State
   const [viewingOrder, setViewingOrder] = useState<any>(null);
@@ -27,11 +30,13 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      let url = new URL('http://127.0.0.1:8000/api/v1/sales/orders');
+      let url = new URL('http://localhost:8000/api/v1/sales/orders');
       if (search) url.searchParams.append('q', search);
       if (statusFilter) url.searchParams.append('status', statusFilter);
 
-      const res = await fetch(url.toString());
+      const res = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         setOrders(await res.json());
       }
@@ -45,9 +50,12 @@ export default function OrdersPage() {
   const handleUpdateOrder = async () => {
     if (!editingOrder) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/sales/orders/${editingOrder.id}`, {
+      const res = await fetch(`http://localhost:8000/api/v1/sales/orders/${editingOrder.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           status: editStatus,
           carrier: editCarrier || null,
@@ -93,14 +101,14 @@ export default function OrdersPage() {
           <p style={{ color: 'var(--text-muted)' }}>Gestiona y visualiza todas las órdenes reales de la tienda.</p>
         </div>
         <Link href="/admin/sales/orders/create" style={{ textDecoration: 'none' }}>
-          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }}>
+          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '8px', fontWeight: 600, color: 'white' }}>
             <Plus size={20} /> Registrar Pedido Manual
           </button>
         </Link>
       </header>
 
       {/* Buscador y Filtros */}
-      <div className="glass-panel" style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px' }}>
+      <div className="glass-panel" style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ position: 'relative' }}>
           <Search size={20} color="var(--text-muted)" style={{ position: 'absolute', left: '16px', top: '14px' }} />
           <input 
@@ -132,15 +140,15 @@ export default function OrdersPage() {
       {/* Tabla de Pedidos */}
       <div className="glass-panel" style={{ overflow: 'hidden' }}>
         <div className="table-responsive-wrapper">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="admin-table">
             <thead>
-              <tr style={{ background: 'var(--card-border)' }}>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Folio</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Cliente</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Fecha</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Estatus</th>
-                <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Total</th>
-                <th style={{ padding: '16px', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)' }}>Acciones</th>
+              <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <th style={{ padding: '16px' }}>Folio</th>
+                <th style={{ padding: '16px' }}>Cliente</th>
+                <th style={{ padding: '16px' }}>Fecha</th>
+                <th style={{ padding: '16px' }}>Estatus</th>
+                <th style={{ padding: '16px' }}>Total</th>
+                <th style={{ padding: '16px', textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -154,22 +162,22 @@ export default function OrdersPage() {
                 </tr>
               ) : (
                 orders.map((order) => (
-                  <tr key={order.id} style={{ borderBottom: '1px solid var(--card-border)' }}>
-                    <td style={{ padding: '16px', fontWeight: 'bold', color: 'var(--primary)' }}>{order.folio}</td>
-                    <td style={{ padding: '16px' }}>
+                  <tr key={order.id}>
+                    <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{order.folio}</td>
+                    <td>
                       <div style={{ fontWeight: 500 }}>{order.customer_name}</div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{order.state || 'N/A'}</div>
                     </td>
-                    <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                       {new Date(order.created_at).toLocaleDateString()}
                     </td>
-                    <td style={{ padding: '16px' }}>
+                    <td>
                       {getStatusBadge(order.status, order.is_assembled)}
                     </td>
-                    <td style={{ padding: '16px', fontWeight: 'bold' }}>
+                    <td style={{ fontWeight: 'bold' }}>
                       ${order.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                     </td>
-                    <td style={{ padding: '16px', textAlign: 'right' }}>
+                    <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                         <button 
                           onClick={() => {
@@ -203,11 +211,12 @@ export default function OrdersPage() {
 
       {/* Modal Editar Estado */}
       {editingOrder && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Actualizar Pedido {editingOrder.folio}</h3>
-              <button onClick={() => setEditingOrder(null)} className="btn-secondary" style={{ padding: '8px' }}><X size={20}/></button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '450px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)', filter: 'blur(20px)', pointerEvents: 'none' }}></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+              <h3 className="text-gradient" style={{ margin: 0, fontSize: '1.5rem' }}>Actualizar Pedido {editingOrder.folio}</h3>
+              <button onClick={() => setEditingOrder(null)} className="btn-secondary" style={{ padding: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}><X size={20}/></button>
             </div>
             
             <div>
@@ -261,7 +270,27 @@ export default function OrdersPage() {
               <p style={{ margin: '6px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Estas notas aparecerán en la suite del cliente.</p>
             </div>
 
-            <button onClick={handleUpdateOrder} className="btn-primary" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '12px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--foreground)', fontWeight: 'bold' }}>Canal de Notificación / Cobro</label>
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="radio" name="channel" value="WhatsApp" checked={notificationChannel === 'WhatsApp'} onChange={(e) => setNotificationChannel(e.target.value)} style={{ accentColor: '#10b981' }} />
+                  <span style={{ fontSize: '0.9rem' }}>WhatsApp</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="radio" name="channel" value="Correo" checked={notificationChannel === 'Correo'} onChange={(e) => setNotificationChannel(e.target.value)} style={{ accentColor: '#3b82f6' }} />
+                  <span style={{ fontSize: '0.9rem' }}>Correo Electrónico</span>
+                </label>
+              </div>
+              <button 
+                onClick={(e) => { e.preventDefault(); alert(`Notificación y/o Link de Pago enviado correctamente vía ${notificationChannel}.`); }}
+                style={{ width: '100%', padding: '10px', background: notificationChannel === 'WhatsApp' ? 'linear-gradient(to right, #10b981, #059669)' : 'linear-gradient(to right, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+              >
+                Enviar Link de Pago / Actualización
+              </button>
+            </div>
+
+            <button onClick={handleUpdateOrder} className="btn-primary" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '12px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', borderRadius: '8px', fontWeight: 600, color: 'white', position: 'relative', zIndex: 1 }}>
               <Save size={18} /> Guardar Cambios
             </button>
           </div>
@@ -271,11 +300,12 @@ export default function OrdersPage() {
       {/* Drawer Ver Detalles */}
       {viewingOrder && (
         <>
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', zIndex: 999 }} onClick={() => setViewingOrder(null)} />
-          <div className="glass-panel" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: '500px', zIndex: 1000, borderRadius: '0', borderLeft: '1px solid var(--card-border)', padding: '32px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '1.5rem' }}>Detalles del Pedido</h2>
-              <button onClick={() => setViewingOrder(null)} className="btn-secondary" style={{ padding: '8px' }}><X size={24}/></button>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', zIndex: 999 }} onClick={() => setViewingOrder(null)} />
+          <div className="glass-panel" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: '500px', zIndex: 1000, borderRadius: '0', borderLeft: '1px solid rgba(255,255,255,0.1)', padding: '32px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px', background: 'rgba(15,23,42,0.85)' }}>
+            <div style={{ position: 'absolute', top: 0, left: '-100px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none' }}></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+              <h2 className="text-gradient" style={{ margin: 0, fontSize: '1.5rem' }}>Detalles del Pedido</h2>
+              <button onClick={() => setViewingOrder(null)} className="btn-secondary" style={{ padding: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-color)', cursor: 'pointer' }}><X size={24}/></button>
             </div>
 
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>

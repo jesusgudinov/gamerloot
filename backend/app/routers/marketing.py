@@ -89,9 +89,12 @@ async def create_campaign(campaign_in: CampaignCreate, db: AsyncSession = Depend
     await db.refresh(campaign)
     return campaign
 
-@router.put("/campaigns/{id}", response_model=CampaignResponse)
-async def update_campaign(id: int, campaign_in: CampaignUpdate, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Campaign).where(Campaign.id == id))
+@router.put("/campaigns/{identifier}", response_model=CampaignResponse)
+async def update_campaign(identifier: str, campaign_in: CampaignUpdate, db: AsyncSession = Depends(get_db)):
+    if identifier.isdigit():
+        result = await db.execute(select(Campaign).where(Campaign.id == int(identifier)))
+    else:
+        result = await db.execute(select(Campaign).where(Campaign.slug == identifier))
     campaign = result.scalars().first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaña no encontrada")
@@ -104,13 +107,18 @@ async def update_campaign(id: int, campaign_in: CampaignUpdate, db: AsyncSession
     await db.refresh(campaign)
     return campaign
 
-@router.delete("/campaigns/{id}")
-async def delete_campaign(id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Campaign).where(Campaign.id == id))
+@router.delete("/campaigns/{identifier}")
+async def delete_campaign(identifier: str, db: AsyncSession = Depends(get_db)):
+    if identifier.isdigit():
+        result = await db.execute(select(Campaign).where(Campaign.id == int(identifier)))
+    else:
+        result = await db.execute(select(Campaign).where(Campaign.slug == identifier))
     campaign = result.scalars().first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaña no encontrada")
     if campaign:
         # Remover descuentos de todos los productos vinculados
-        res_prod = await db.execute(select(Product).where(Product.active_campaign_id == id))
+        res_prod = await db.execute(select(Product).where(Product.active_campaign_id == campaign.id))
         products = res_prod.scalars().all()
         for p in products:
             p.active_campaign_id = None
@@ -122,30 +130,44 @@ async def delete_campaign(id: int, db: AsyncSession = Depends(get_db)):
         await db.commit()
     return {"message": "Campaña eliminada"}
 
-@router.get("/campaigns/{id}", response_model=CampaignResponse)
-async def get_campaign(id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Campaign).where(Campaign.id == id))
+@router.get("/campaigns/{identifier}", response_model=CampaignResponse)
+async def get_campaign(identifier: str, db: AsyncSession = Depends(get_db)):
+    if identifier.isdigit():
+        result = await db.execute(select(Campaign).where(Campaign.id == int(identifier)))
+    else:
+        result = await db.execute(select(Campaign).where(Campaign.slug == identifier))
     campaign = result.scalars().first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaña no encontrada")
     return campaign
 
-@router.get("/campaigns/{id}/products")
-async def get_campaign_products(id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Product).where(Product.active_campaign_id == id))
+@router.get("/campaigns/{identifier}/products")
+async def get_campaign_products(identifier: str, db: AsyncSession = Depends(get_db)):
+    if identifier.isdigit():
+        camp_id = int(identifier)
+    else:
+        result = await db.execute(select(Campaign).where(Campaign.slug == identifier))
+        campaign = result.scalars().first()
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaña no encontrada")
+        camp_id = campaign.id
+        
+    result = await db.execute(select(Product).where(Product.active_campaign_id == camp_id))
     products = result.scalars().all()
     return [{"id": p.id, "name": p.name, "base_price": p.base_price, "discount_price": p.discount_price} for p in products]
 
-@router.post("/campaigns/{id}/apply-discounts")
-async def apply_campaign_discounts(id: int, payload: CampaignDiscountApply, db: AsyncSession = Depends(get_db)):
-    # Fetch campaign
-    res_camp = await db.execute(select(Campaign).where(Campaign.id == id))
+@router.post("/campaigns/{identifier}/apply-discounts")
+async def apply_campaign_discounts(identifier: str, payload: CampaignDiscountApply, db: AsyncSession = Depends(get_db)):
+    if identifier.isdigit():
+        res_camp = await db.execute(select(Campaign).where(Campaign.id == int(identifier)))
+    else:
+        res_camp = await db.execute(select(Campaign).where(Campaign.slug == identifier))
     campaign = res_camp.scalars().first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaña no encontrada")
     
     # Base query
-    stmt = select(Product).where(Product.is_active == True)
+    stmt = select(Product).where(Product.status == "PUBLISHED")
     
     if payload.target_type == "category" and payload.target_id:
         stmt = stmt.where(Product.category_id == payload.target_id)
@@ -242,6 +264,15 @@ async def get_flash_sales(db: AsyncSession = Depends(get_db)):
 async def create_flash_sale(fs_in: FlashSaleCreate, db: AsyncSession = Depends(get_db)):
     fs = FlashSale(**fs_in.model_dump())
     db.add(fs)
+    
+    # Update Product
+    res_prod = await db.execute(select(Product).where(Product.id == fs.product_id))
+    prod = res_prod.scalars().first()
+    if prod:
+        prod.discount_price = fs.discount_price
+        prod.discount_start_date = fs.start_date
+        prod.discount_end_date = fs.end_date
+        
     await db.commit()
     await db.refresh(fs)
     return fs
@@ -266,6 +297,14 @@ async def delete_flash_sale(id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(FlashSale).where(FlashSale.id == id))
     fs = result.scalars().first()
     if fs:
+        # Reset Product
+        res_prod = await db.execute(select(Product).where(Product.id == fs.product_id))
+        prod = res_prod.scalars().first()
+        if prod:
+            prod.discount_price = None
+            prod.discount_start_date = None
+            prod.discount_end_date = None
+            
         await db.delete(fs)
         await db.commit()
     return {"message": "Oferta relámpago eliminada"}

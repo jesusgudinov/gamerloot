@@ -42,7 +42,7 @@ class CampaignBasicResponse(BaseModel):
         from_attributes = True
 
 class ProductBase(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra='ignore')
     
     sku: str = Field(..., max_length=50)
     upc: Optional[str] = None

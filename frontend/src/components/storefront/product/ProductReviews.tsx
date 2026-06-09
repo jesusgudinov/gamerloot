@@ -29,7 +29,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/v1/interactions/reviews/product/${productId}`)
+    fetch(`http://localhost:8000/api/v1/interactions/reviews/product/${productId}`)
       .then(res => res.json())
       .then(data => {
         setReviews(data);

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Heart, Check, ShieldCheck, Truck, RotateCcw, Star, ChevronRight, ChevronLeft, Share2, Scale, MessageCircleQuestion } from 'lucide-react';
+import { ShoppingCart, Heart, Check, ShieldCheck, Truck, RotateCcw, Star, ChevronRight, ChevronLeft, Share2, Scale, MessageCircleQuestion, Zap } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/storefront/Navbar';
 import ProductCarousel from '@/components/storefront/ProductCarousel';
@@ -29,25 +29,49 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const [isAdding, setIsAdding] = useState(false);
   const [added, setAdded] = useState(false);
 
+  // Countdown State
+  const [timeLeft, setTimeLeft] = useState('');
+
   // Recommendations
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
 
   useEffect(() => {
     // 1. Fetch Product
-    fetch(`http://127.0.0.1:8000/api/v1/products/${slug}`)
+    fetch(`http://localhost:8000/api/v1/products/${slug}`)
       .then(res => res.json())
       .then(data => {
         setProduct(data);
         setActiveImage(data.main_image_url || '');
         setLoading(false);
         
+        // Setup countdown if needed
+        if (data.discount_end_date) {
+          const end = new Date(data.discount_end_date).getTime();
+          const updateTime = () => {
+            const now = new Date().getTime();
+            const distance = end - now;
+            if (distance < 0) {
+              setTimeLeft('Terminada');
+            } else {
+              const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+              const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+              const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+              const s = Math.floor((distance % (1000 * 60)) / 1000);
+              setTimeLeft(`${d}d ${h}h ${m}m ${s}s`);
+            }
+          };
+          updateTime();
+          const interval = setInterval(updateTime, 1000);
+          return () => clearInterval(interval);
+        }
+        
         // Save to Recently Viewed in LocalStorage
         saveToRecentlyViewed(data);
         
         // 2. Fetch Related (same category)
         if (data.category_id) {
-          fetch(`http://127.0.0.1:8000/api/v1/products/?category_id=${data.category_id}&size=10`)
+          fetch(`http://localhost:8000/api/v1/products/?category_id=${data.category_id}&size=10`)
             .then(r => r.json())
             .then(relatedData => {
               // Exclude current
@@ -247,6 +271,17 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                   <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981', lineHeight: '1' }}>
                     ${Number(product.discount_price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </div>
+                  {product.discount_end_date && new Date(product.discount_end_date) > new Date() && (
+                    <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '12px 16px', borderRadius: '12px' }}>
+                      <Zap size={20} color="#eab308" className="pulse-animation" />
+                      <div>
+                        <div style={{ fontSize: '0.85rem', color: '#eab308', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Oferta Relámpago Termina En:</div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }} className="flash-countdown" data-end={product.discount_end_date}>
+                          {timeLeft || 'Calculando...'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--foreground)', lineHeight: '1' }}>

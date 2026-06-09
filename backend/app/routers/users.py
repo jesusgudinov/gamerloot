@@ -62,6 +62,13 @@ async def assign_role_to_user(
     if not role:
         raise HTTPException(status_code=404, detail="Rol no encontrado.")
         
+    # Seguridad: Solo un Superusuario puede otorgar el rol de "Dueño"
+    if role.name == "Dueño" and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403, 
+            detail="Operación denegada. Solo el dueño actual puede otorgar privilegios de Dueño."
+        )
+        
     target_user.role_id = role.id
     
     # Si le damos un rol normal, asegurar que no sea superuser
@@ -97,6 +104,13 @@ async def create_team_member(
     role = result.scalars().first()
     if not role:
         raise HTTPException(status_code=404, detail="Rol no encontrado.")
+        
+    # Seguridad: Solo un Superusuario puede crear una cuenta "Dueño"
+    if role.name == "Dueño" and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=403, 
+            detail="Operación denegada. Solo el dueño actual puede crear nuevas cuentas con privilegios de Dueño."
+        )
         
     from app.core.security import get_password_hash
     hashed_pwd = get_password_hash(member_in.password)

@@ -8,6 +8,13 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     REDIS_URL: str
 
+    ENVIRONMENT: str = "development"
+    
+    # Configuración de pool de conexiones para producción
+    DATABASE_POOL_SIZE: int = 10
+    DATABASE_MAX_OVERFLOW: int = 20
+    DATABASE_POOL_RECYCLE: int = 1800 # 30 minutos
+
     SECRET_KEY: str = "super_secret_gamer_loot_key_12345" # En prod, esto irá en el .env
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 días

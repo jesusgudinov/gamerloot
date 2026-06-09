@@ -40,6 +40,9 @@ export default function AdminAttributes() {
     is_filterable: true,
     is_for_configurator: false
   });
+  
+  const [allCategories, setAllCategories] = useState<any[]>([]);
+  const [categorySearchTerm, setCategorySearchTerm] = useState('');
 
   // Modal Valor
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
@@ -55,7 +58,7 @@ export default function AdminAttributes() {
   const fetchAttributes = async (searchTerm = '') => {
     setLoading(true);
     try {
-      const url = new URL('http://127.0.0.1:8000/api/v1/catalog/attributes');
+      const url = new URL('http://localhost:8000/api/v1/catalog/attributes');
       if (searchTerm) url.searchParams.append('search', searchTerm);
       
       const response = await fetch(url.toString());
@@ -73,6 +76,13 @@ export default function AdminAttributes() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetch('http://localhost:8000/api/v1/catalog/categories')
+      .then(res => res.json())
+      .then(data => setAllCategories(data))
+      .catch(e => console.error(e));
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -93,6 +103,7 @@ export default function AdminAttributes() {
         is_filterable: attr.is_filterable,
         is_for_configurator: attr.is_for_configurator
       });
+      setCategorySearchTerm('');
     } else {
       setEditingAttr(null);
       setAttrForm({
@@ -102,6 +113,7 @@ export default function AdminAttributes() {
         is_filterable: true,
         is_for_configurator: false
       });
+      setCategorySearchTerm('');
     }
     setIsAttrModalOpen(true);
   };
@@ -120,8 +132,8 @@ export default function AdminAttributes() {
 
       const method = editingAttr ? 'PUT' : 'POST';
       const url = editingAttr 
-        ? `http://127.0.0.1:8000/api/v1/catalog/attributes/${editingAttr.id}`
-        : 'http://127.0.0.1:8000/api/v1/catalog/attributes';
+        ? `http://localhost:8000/api/v1/catalog/attributes/${editingAttr.id}`
+        : 'http://localhost:8000/api/v1/catalog/attributes';
 
       const response = await fetch(url, {
         method,
@@ -153,7 +165,7 @@ export default function AdminAttributes() {
     }
     if (!confirm(`¿Estás seguro de eliminar el atributo "${attr.name}"? Se borrarán todos sus valores.`)) return;
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/v1/catalog/attributes/${attr.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      const response = await fetch(`http://localhost:8000/api/v1/catalog/attributes/${attr.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (response.ok) {
         if (selectedAttribute?.id === attr.id) setSelectedAttribute(null);
         fetchAttributes(search);
@@ -199,8 +211,8 @@ export default function AdminAttributes() {
 
       const method = editingValue ? 'PUT' : 'POST';
       const url = editingValue 
-        ? `http://127.0.0.1:8000/api/v1/catalog/attributes/values/${editingValue.id}`
-        : `http://127.0.0.1:8000/api/v1/catalog/attributes/${selectedAttribute.id}/values`;
+        ? `http://localhost:8000/api/v1/catalog/attributes/values/${editingValue.id}`
+        : `http://localhost:8000/api/v1/catalog/attributes/${selectedAttribute.id}/values`;
 
       const response = await fetch(url, {
         method,
@@ -228,7 +240,7 @@ export default function AdminAttributes() {
   const handleDeleteValue = async (val: AttributeValue) => {
     if (!confirm(`¿Eliminar el valor "${val.value}"?`)) return;
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/v1/catalog/attributes/values/${val.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      const response = await fetch(`http://localhost:8000/api/v1/catalog/attributes/values/${val.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (response.ok) {
         fetchAttributes(search);
       } else {
@@ -298,9 +310,9 @@ export default function AdminAttributes() {
       <div style={{ display: 'flex', gap: '24px', flex: 1, minHeight: 0, flexWrap: 'wrap' }}>
         
         {/* Left Column: Attributes */}
-        <div style={{ flex: '1 1 350px', display: 'flex', flexDirection: 'column', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--card-border)', overflow: 'hidden', minHeight: '300px' }}>
+        <div className="glass-panel" style={{ flex: '1 1 350px', display: 'flex', flexDirection: 'column', borderRadius: '12px', border: '1px solid var(--card-border)', overflow: 'hidden', minHeight: '300px' }}>
           
-          <div style={{ padding: '16px', borderBottom: '1px solid var(--card-border)', display: 'flex', gap: '12px', alignItems: 'center', background: 'var(--card-border)' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '12px', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
             <div style={{ display: 'flex', alignItems: 'center', background: 'var(--input-bg)', padding: '0 12px', borderRadius: '8px', flex: 1 }}>
               <Search size={18} color="var(--text-muted)" />
               <input 
@@ -313,7 +325,8 @@ export default function AdminAttributes() {
             </div>
             <button 
               onClick={() => handleOpenAttrModal()}
-              style={{ background: 'var(--accent-color)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}
+              className="btn-primary"
+              style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
             >
               <Plus size={16} /> Atributo
             </button>
@@ -371,10 +384,10 @@ export default function AdminAttributes() {
         </div>
 
         {/* Right Column: Values */}
-        <div style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--card-border)', overflow: 'hidden', minHeight: '300px' }}>
+        <div className="glass-panel" style={{ flex: '2 1 400px', display: 'flex', flexDirection: 'column', borderRadius: '12px', border: '1px solid var(--card-border)', overflow: 'hidden', minHeight: '300px' }}>
           {selectedAttribute ? (
             <>
-              <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--card-border)' }}>
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
                 <div>
                   <h2 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: 'var(--text-color)' }}>{selectedAttribute.name}</h2>
                   <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
@@ -383,7 +396,8 @@ export default function AdminAttributes() {
                 </div>
                 <button 
                   onClick={() => handleOpenValueModal()}
-                  style={{ background: 'var(--input-bg)', border: '1px solid var(--card-border)', color: 'var(--text-color)', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}
+                  className="btn-primary"
+                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', color: 'white', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}
                 >
                   <Plus size={16} /> Añadir Valor
                 </button>
@@ -442,13 +456,17 @@ export default function AdminAttributes() {
 
       {/* Modal Atributo */}
       {isAttrModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(4px)', padding: '16px' }}>
-          <div style={{ background: 'var(--background)', width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', border: '1px solid var(--card-border)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <div style={{ padding: '24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '1.2rem' }}>{editingAttr ? 'Editar Atributo' : 'Nuevo Atributo'}</h2>
-              <button onClick={() => setIsAttrModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><XCircle size={24} /></button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(8px)', padding: '16px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%)', filter: 'blur(20px)', zIndex: 0 }}></div>
+            <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+              <h2 className="text-gradient" style={{ margin: 0, fontSize: '1.4rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Type size={24} color="#8b5cf6" />
+                {editingAttr ? 'Editar Atributo' : 'Nuevo Atributo'}
+              </h2>
+              <button onClick={() => setIsAttrModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', borderRadius: '50%', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(255,255,255,0.1)'} onMouseOut={e => e.currentTarget.style.background='transparent'}><XCircle size={24} /></button>
             </div>
-            <form onSubmit={handleSaveAttr} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleSaveAttr} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', zIndex: 1 }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Nombre *</label>
                 <input required type="text" value={attrForm.name} onChange={e => setAttrForm({...attrForm, name: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', outline: 'none' }} />
@@ -473,15 +491,15 @@ export default function AdminAttributes() {
                   </label>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }} title="Atributo Crítico para validar compatibilidad">
+                  <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }} title="Atributo Crítico para mostrar en la interfaz del configurador">
                     <input type="checkbox" className="toggle-checkbox" checked={attrForm.is_for_configurator} onChange={e => setAttrForm({...attrForm, is_for_configurator: e.target.checked})} />
                     <span style={{ fontSize: '0.95rem', color: 'var(--text-color)' }}>Atributo Crítico (Configurador PC)</span>
                   </label>
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
-                <button type="button" onClick={() => setIsAttrModalOpen(false)} style={{ padding: '10px 20px', borderRadius: '8px', background: 'transparent', border: '1px solid var(--card-border)', color: 'var(--text-color)', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" disabled={saving} style={{ padding: '10px 20px', borderRadius: '8px', background: 'var(--accent-color)', border: 'none', color: 'white', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 500 }}>Guardar</button>
+                <button type="button" onClick={() => setIsAttrModalOpen(false)} style={{ padding: '10px 20px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-color)', cursor: 'pointer', fontWeight: 500 }}>Cancelar</button>
+                <button type="submit" disabled={saving} className="btn-primary" style={{ padding: '10px 20px', borderRadius: '8px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', color: 'white', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 600 }}>Guardar</button>
               </div>
             </form>
           </div>
@@ -490,13 +508,17 @@ export default function AdminAttributes() {
 
       {/* Modal Valor */}
       {isValueModalOpen && selectedAttribute && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(4px)', padding: '16px' }}>
-          <div style={{ background: 'var(--background)', width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', border: '1px solid var(--card-border)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-            <div style={{ padding: '24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '1.2rem' }}>{editingValue ? 'Editar Valor' : 'Nuevo Valor'}</h2>
-              <button onClick={() => setIsValueModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><XCircle size={24} /></button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(8px)', padding: '16px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%)', filter: 'blur(20px)', zIndex: 0 }}></div>
+            <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+              <h2 className="text-gradient" style={{ margin: 0, fontSize: '1.4rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Tag size={24} color="#8b5cf6" />
+                {editingValue ? 'Editar Valor' : 'Nuevo Valor'}
+              </h2>
+              <button onClick={() => setIsValueModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', borderRadius: '50%', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background='rgba(255,255,255,0.1)'} onMouseOut={e => e.currentTarget.style.background='transparent'}><XCircle size={24} /></button>
             </div>
-            <form onSubmit={handleSaveValue} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleSaveValue} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', zIndex: 1 }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Valor (Ej: Rojo, AM5, 16GB) *</label>
                 <input required type="text" value={valueForm.value} onChange={e => setValueForm({...valueForm, value: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', outline: 'none' }} />
@@ -515,8 +537,8 @@ export default function AdminAttributes() {
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
-                <button type="button" onClick={() => setIsValueModalOpen(false)} style={{ padding: '10px 20px', borderRadius: '8px', background: 'transparent', border: '1px solid var(--card-border)', color: 'var(--text-color)', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" disabled={saving} style={{ padding: '10px 20px', borderRadius: '8px', background: 'var(--accent-color)', border: 'none', color: 'white', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 500 }}>Guardar</button>
+                <button type="button" onClick={() => setIsValueModalOpen(false)} style={{ padding: '10px 20px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-color)', cursor: 'pointer', fontWeight: 500 }}>Cancelar</button>
+                <button type="submit" disabled={saving} className="btn-primary" style={{ padding: '10px 20px', borderRadius: '8px', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', color: 'white', cursor: saving ? 'not-allowed' : 'pointer', fontWeight: 600 }}>Guardar</button>
               </div>
             </form>
           </div>

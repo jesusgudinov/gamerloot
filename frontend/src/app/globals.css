@@ -395,6 +395,28 @@ textarea:focus {
     gap: 30px;
     padding: 20px;
   }
+  .configurator-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr 340px;
+    gap: 30px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .configurator-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .configurator-sidebar-left {
+    order: 2;
+  }
+  .configurator-main {
+    order: 1;
+  }
+  .configurator-sidebar-right {
+    order: 3;
+  }
 }
 
 /* Tablas Responsivas */
@@ -402,6 +424,31 @@ textarea:focus {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   width: 100%;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-table th, .admin-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--card-border);
+  vertical-align: middle;
+}
+.admin-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.02);
+}
+.admin-table tbody tr {
+  transition: background 0.2s;
+}
+.admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.015);
 }
 
 /* Action Buttons (Tablas) */
