@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart, Search, X } from 'lucide-react';
+import { getImageUrl } from '@/utils/imageUrl';
 import { useCart } from '@/context/CartContext';
 
 export default function Navbar() {
@@ -129,7 +130,7 @@ export default function Navbar() {
                     <div style={{ width: '40px', height: '40px', background: '#fff', borderRadius: '8px', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {product.main_image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={product.main_image_url} alt={product.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                        <img src={getImageUrl(product.main_image_url)} alt={product.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                       ) : (
                         <div style={{ color: '#94a3b8', fontSize: '0.6rem' }}>Sin img</div>
                       )}

@@ -75,7 +75,9 @@ app.include_router(uploads.router, prefix="/api/v1/uploads", tags=["Archivos y B
 
 # Servir archivos estáticos del bucket local
 os.makedirs("uploads/images", exist_ok=True)
+os.makedirs("media/products/techsmart", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/media", StaticFiles(directory="media"), name="media")
 @app.get("/")
 async def root():
     return {"message": "Bienvenido a la API de Gamer Loot"}

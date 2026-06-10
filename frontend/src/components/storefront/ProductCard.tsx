@@ -18,6 +18,8 @@ interface Product {
   inventory_stocks?: { quantity: number }[];
 }
 
+import { getImageUrl } from '@/utils/imageUrl';
+
 export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
@@ -36,7 +38,7 @@ export default function ProductCard({ product }: { product: Product }) {
         sku: product.slug || '',
         name: product.name,
         price: product.discount_price || product.base_price,
-        image_url: product.main_image_url || '',
+        image_url: getImageUrl(product.main_image_url) || '',
         quantity: 1
       });
       setIsAdding(false);
@@ -108,7 +110,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div style={{ width: '100%', height: '220px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
           {product.main_image_url ? (
             <img 
-              src={product.main_image_url} 
+              src={getImageUrl(product.main_image_url)} 
               alt={product.name} 
               style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '20px', transition: 'transform 0.5s ease' }}
               className="product-image"

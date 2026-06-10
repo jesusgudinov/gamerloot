@@ -26,3 +26,29 @@ Al crear o modificar interfaces en el frontend (Next.js), todos los agentes debe
    - Éxito / Confirmar Compra: Verdes esmeralda (`#10b981`, `#059669`)
    - Precaución / Omitido: Amarillos/Naranjas (`#f59e0b`, `#eab308`)
    - Destructivo / Eliminar: Rojos (`#ef4444`)
+
+## Arquitectura de Backend y Operaciones Masivas (Catálogo)
+
+Al trabajar en los sistemas internos del catálogo (Scraping, Procesamiento, Imágenes), los agentes deben seguir estas directrices establecidas en implementaciones pasadas:
+
+1. **Gestión de Medios (Imágenes locales)**: 
+   - Nunca enlazar imágenes de productos directamente a los servidores de los proveedores originales (hotlinking). 
+   - Las imágenes deben descargarse, alojarse localmente y ser servidas por FastAPI montando los directorios estáticos correspondientes (ej. `app.mount("/media", ...)`).
+   - Las rutas en la BD deben ser relativas (ej. `/media/products/techsmart/imagen.webp`).
+
+2. **Optimización de Imágenes (WebP)**:
+   - Toda imagen de producto debe ser optimizada a formato `.webp` de 1000x1000 píxeles.
+   - **Transparencia vs. Opacidad**: Si la imagen original (PNG) tiene canal alfa (transparente), el padding necesario para alcanzar los 1000x1000 debe hacerse con relleno transparente. Si es JPG u opaca, el fondo debe rellenarse de color blanco sólido.
+   - Una vez optimizadas las imágenes a `.webp`, los archivos originales crudos (`.jpg`, `.png`) **deben eliminarse** del servidor para ahorrar almacenamiento.
+
+3. **Operaciones Pesadas en Tiempo Real (Server-Sent Events)**:
+   - Para tareas que procesen cientos de miles de registros (como la optimización masiva de imágenes o sincronizaciones largas), **nunca** uses un endpoint síncrono bloqueante (`POST` simple que tarde minutos en responder).
+   - Se debe implementar `StreamingResponse` (Server-Sent Events) en el backend (con yield de JSONs).
+   - En el frontend, se debe crear un **submódulo dedicado** para la tarea (ej. en el Sidebar) con una barra de progreso animada que consuma el stream, para mantener al usuario informado. **No** congeles interfaces genéricas con botones bloqueantes.
+
+4. **Reglas de Precios y Web Scraping**:
+   - Siempre mapear correctamente el tipo de moneda leyendo las etiquetas (ej. `USD` o `MXN`) de la fuente para hacer las conversiones necesarias (TC). No asumas MXN.
+   - Si el sitio fuente tiene descuentos, extrae tanto el precio base como el precio de descuento para pasarlos a nuestro sistema.
+   - **Regla de Redondeo (Precios Mercadológicos)**: Al calcular precios finales (con IVA, utilidad, etc.), el precio debe ajustarse a una terminación de marketing:
+     - Si termina entre 0 y 4 (ej. `$554`), se redondea al `9` inferior (ej. `$549`).
+     - Si termina entre 5 y 9 (ej. `$555`), se redondea al `9` superior (ej. `$559`).

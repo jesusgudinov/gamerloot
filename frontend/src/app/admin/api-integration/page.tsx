@@ -16,7 +16,7 @@ export default function ApiIntegrationPage() {
 
   const fetchSyncStatus = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/sync/status`);
+      const res = await fetch(`http://localhost:8000/api/v1/sync/status`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setSyncStatus(data);
@@ -45,6 +45,7 @@ export default function ApiIntegrationPage() {
       const res = await fetch(`http://localhost:8000/api/v1/sync/upload/${selectedProvider}`, {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
       
       if (res.ok) {
@@ -63,7 +64,7 @@ export default function ApiIntegrationPage() {
 
   const triggerSync = async (endpoint: string) => {
     try {
-      await fetch(`http://localhost:8000/api/v1/sync/trigger/${endpoint}`, { method: 'POST' });
+      await fetch(`http://localhost:8000/api/v1/sync/trigger/${endpoint}`, { method: 'POST', credentials: 'include' });
     } catch (error) {
       alert("Error de conexión con el backend.");
     }

@@ -1,24 +1,23 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { getImageUrl } from '@/utils/imageUrl';
 
 interface StickyAddToCartProps {
   product: any;
-  showAfterY: number; // Pixels to scroll before showing
+  showAfterY?: number;
 }
 
 export default function StickyAddToCart({ product, showAfterY = 600 }: StickyAddToCartProps) {
   const [isVisible, setIsVisible] = useState(false);
   const { addToCart } = useCart();
+  const [isAdding, setIsAdding] = useState(false);
+  const [added, setAdded] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > showAfterY) {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
-      }
+      setIsVisible(window.scrollY > showAfterY);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -28,14 +27,21 @@ export default function StickyAddToCart({ product, showAfterY = 600 }: StickyAdd
   if (!isVisible) return null;
 
   const handleAdd = () => {
+    if (isAdding || added || !product) return;
+    setIsAdding(true);
+    
     addToCart({
       product_id: product.id,
       sku: product.sku,
       name: product.name,
       price: product.discount_price || product.base_price,
-      image_url: product.main_image_url || '',
+      image_url: getImageUrl(product.main_image_url) || '',
       quantity: 1
     });
+
+    setIsAdding(false);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   const formatCurrency = (amount: number) => amount.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
@@ -62,8 +68,12 @@ export default function StickyAddToCart({ product, showAfterY = 600 }: StickyAdd
       <div style={{ width: '100%', maxWidth: '1200px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{ width: '50px', height: '50px', background: '#fff', borderRadius: '8px', overflow: 'hidden' }}>
-            <img src={product.main_image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '50px', height: '50px', background: '#fff', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {getImageUrl(product.main_image_url) ? (
+              <img src={getImageUrl(product.main_image_url)} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : (
+              <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Sin img</span>
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '600px' }}>

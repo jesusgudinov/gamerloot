@@ -352,3 +352,87 @@ async def delete_marketing_tag(
     await db.delete(tag)
     await db.commit()
     return {"message": "Tag deleted"}
+
+import os
+from app.services.image_optimizer import ImageOptimizer
+from pydantic import BaseModel
+
+from fastapi.responses import StreamingResponse
+import json
+import asyncio
+
+@router.get("/optimize-images/stream", dependencies=[Depends(require_permissions(["manage_catalog"]))])
+async def optimize_all_images_stream(db: AsyncSession = Depends(get_db)):
+    """
+    Escanea todo el catálogo buscando imágenes en JPG/PNG locales y las convierte
+    a WEBP de 1000x1000, borrando el archivo original.
+    Devuelve Server-Sent Events (SSE) para medir progreso.
+    """
+    async def event_generator():
+        query = select(Product)
+        result = await db.execute(query)
+        products = result.scalars().all()
+        
+        total_products = len(products)
+        optimized_count = 0
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+        
+        yield f"data: {json.dumps({'status': 'scanning', 'current_product': 0, 'total_products': total_products, 'optimized_images': 0})}\n\n"
+        
+        for i, product in enumerate(products):
+            updated = False
+            
+            # Procesar imagen principal
+            if product.main_image_url and product.main_image_url.lower().endswith(('.jpg', '.jpeg', '.png')):
+                if product.main_image_url.startswith('/media') or product.main_image_url.startswith('/uploads'):
+                    rel_path = product.main_image_url.lstrip('/')
+                    abs_path = os.path.join(base_dir, rel_path)
+                    
+                    if os.path.exists(abs_path):
+                        try:
+                            new_abs_path = await asyncio.to_thread(ImageOptimizer.optimize_image, abs_path)
+                            os.remove(abs_path)
+                            new_rel_path = '/' + os.path.relpath(new_abs_path, base_dir)
+                            product.main_image_url = new_rel_path
+                            optimized_count += 1
+                            updated = True
+                        except Exception as e:
+                            print(f"Error optimizando {abs_path}: {e}")
+            
+            # Procesar galería
+            if product.image_gallery:
+                new_gallery = []
+                for img_url in product.image_gallery:
+                    if img_url.lower().endswith(('.jpg', '.jpeg', '.png')) and (img_url.startswith('/media') or img_url.startswith('/uploads')):
+                        rel_path = img_url.lstrip('/')
+                        abs_path = os.path.join(base_dir, rel_path)
+                        if os.path.exists(abs_path):
+                            try:
+                                new_abs_path = await asyncio.to_thread(ImageOptimizer.optimize_image, abs_path)
+                                os.remove(abs_path)
+                                new_rel_path = '/' + os.path.relpath(new_abs_path, base_dir)
+                                new_gallery.append(new_rel_path)
+                                optimized_count += 1
+                                updated = True
+                                continue
+                            except Exception as e:
+                                print(f"Error optimizando galería {abs_path}: {e}")
+                    
+                    new_gallery.append(img_url)
+                    
+                if updated:
+                    product.image_gallery = new_gallery
+                    
+            if updated:
+                db.add(product)
+                
+            # Enviar progreso por lotes para evitar saturar el stream (o si se optimizó algo)
+            if updated or (i % 10 == 0) or (i == total_products - 1):
+                yield f"data: {json.dumps({'status': 'progress', 'current_product': i + 1, 'total_products': total_products, 'optimized_images': optimized_count})}\n\n"
+                
+        if optimized_count > 0:
+            await db.commit()
+            
+        yield f"data: {json.dumps({'status': 'completed', 'current_product': total_products, 'total_products': total_products, 'optimized_images': optimized_count})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

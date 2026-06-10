@@ -11,6 +11,7 @@ import ProductAccordion from '@/components/storefront/product/ProductAccordion';
 import ProductReviews from '@/components/storefront/product/ProductReviews';
 import ProductQA from '@/components/storefront/product/ProductQA';
 import StickyAddToCart from '@/components/storefront/product/StickyAddToCart';
+import { getImageUrl } from '@/utils/imageUrl';
 
 export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const unwrappedParams = use(params);
@@ -42,7 +43,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       .then(res => res.json())
       .then(data => {
         setProduct(data);
-        setActiveImage(data.main_image_url || '');
+        setActiveImage(getImageUrl(data.main_image_url) || '');
         setLoading(false);
         
         // Setup countdown if needed
@@ -74,8 +75,9 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
           fetch(`http://localhost:8000/api/v1/products/?category_id=${data.category_id}&size=10`)
             .then(r => r.json())
             .then(relatedData => {
-              // Exclude current
-              setRelatedProducts(relatedData.items.filter((p: any) => p.id !== data.id));
+              // Exclude current and filter by stock
+              const withStock = relatedData.items.filter((p: any) => p.id !== data.id && p.inventory_stocks?.some((s: any) => s.quantity > 0));
+              setRelatedProducts(withStock);
             });
         }
       })
@@ -103,8 +105,14 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const loadRecentlyViewed = () => {
     const key = 'gl_recently_viewed';
     const history = JSON.parse(localStorage.getItem(key) || '[]');
-    // Filter out current product
-    setRecentlyViewed(history.filter((p: any) => p.slug !== slug));
+    // Filter out current product, check stock, and ensure it has a valid image
+    setRecentlyViewed(history.filter((p: any) => 
+      p.slug !== slug && 
+      p.inventory_stocks?.some((s: any) => s.quantity > 0) &&
+      p.main_image_url &&
+      !p.main_image_url.includes('wp-content') &&
+      !p.main_image_url.includes('gamerloot.com.mx')
+    ));
   };
 
   const handleAddToCart = () => {
@@ -117,7 +125,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
         sku: product.sku || '',
         name: product.name,
         price: product.discount_price || product.base_price,
-        image_url: product.main_image_url || '',
+        image_url: getImageUrl(product.main_image_url) || '',
         quantity: qty
       });
       setIsAdding(false);
@@ -128,7 +136,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
 
   useEffect(() => {
     if (activeImage && product) {
-      const g = Array.from(new Set([product.main_image_url, ...(product.image_gallery || [])].filter(Boolean))) as string[];
+      const g = Array.from(new Set([product.main_image_url, ...(product.image_gallery || [])].filter(Boolean))).map(url => getImageUrl(url)) as string[];
       const idx = g.indexOf(activeImage);
       const el = document.getElementById(`thumb-${idx}`);
       if (el) {
@@ -146,7 +154,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   }
 
   // Calculate gallery array
-  const gallery = Array.from(new Set([product.main_image_url, ...(product.image_gallery || [])].filter(Boolean))) as string[];
+  const gallery = Array.from(new Set([product.main_image_url, ...(product.image_gallery || [])].filter(Boolean))).map(url => getImageUrl(url)) as string[];
   const displayRating = product.rating || 0;
   const isAvailable = product.inventory_stocks?.reduce((acc: number, stock: any) => acc + stock.quantity, 0) > 0;
 

@@ -5,6 +5,7 @@ import { ArrowLeft, Save, UserPlus, MapPin, Loader2, Camera } from 'lucide-react
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 export default function CreateClientPage() {
   const { token } = useAuth();
@@ -133,54 +134,48 @@ export default function CreateClientPage() {
             <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: 'var(--foreground)' }}>Identidad del Jugador</h2>
           </div>
 
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: '24px', alignItems: 'center' }}>
-            <div style={{ width: '96px', height: '96px', borderRadius: '24px', background: 'var(--input-bg)', border: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.3)' }}>
-              {profilePictureUrl ? (
-                <img src={profilePictureUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <Camera size={32} color="var(--text-muted)" style={{ opacity: 0.5 }} />
-              )}
-            </div>
-            <div style={{ flex: 1 }}>
-              <label className="form-label" style={{ marginBottom: '8px' }}>Imagen de Perfil</label>
-              <input type="text" className="form-input" value={profilePictureUrl} onChange={e => setProfilePictureUrl(e.target.value)} placeholder="https://ejemplo.com/avatar.jpg" style={{ width: '100%' }} />
-            </div>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Imagen de Perfil</label>
+            <ImageUploader 
+              onUploadSuccess={(url) => setProfilePictureUrl(url)} 
+              currentImageUrl={profilePictureUrl} 
+            />
           </div>
 
           <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>Nombre(s) <span style={{color: 'var(--primary)'}}>*</span></label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Nombre(s) <span style={{color: 'var(--primary)'}}>*</span></label>
               <input type="text" className="form-input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Ej. John" style={{ width: '100%' }} />
             </div>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>Apellidos</label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Apellidos</label>
               <input type="text" className="form-input" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Ej. Doe" style={{ width: '100%' }} />
             </div>
           </div>
 
           <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>Gamer Tag (Nickname)</label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Gamer Tag (Nickname)</label>
               <input type="text" className="form-input" value={username} onChange={e => setUsername(e.target.value)} placeholder="Ej. xX_Slayer_Xx" style={{ width: '100%' }} />
             </div>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>RFC / Tax ID</label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>RFC / Tax ID</label>
               <input type="text" className="form-input" value={rfc} onChange={e => setRfc(e.target.value)} placeholder="Opcional para facturas" style={{ width: '100%' }} />
             </div>
           </div>
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <label className="form-label" style={{ marginBottom: '8px' }}>Correo Electrónico <span style={{color: 'var(--primary)'}}>*</span></label>
+            <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Correo Electrónico <span style={{color: 'var(--primary)'}}>*</span></label>
             <input type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="jugador@ejemplo.com" style={{ width: '100%' }} />
           </div>
 
           <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>Teléfono Móvil</label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Teléfono Móvil</label>
               <input type="text" className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+52 000 000 0000" style={{ width: '100%' }} />
             </div>
             <div>
-              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <span>Contraseña</span>
                 <button onClick={(e) => { e.preventDefault(); setPassword(generatePassword()); }} style={{ background: 'rgba(106, 17, 203, 0.1)', border: '1px solid rgba(106, 17, 203, 0.3)', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '4px' }}>
                   Auto-generar
@@ -204,43 +199,43 @@ export default function CreateClientPage() {
           </div>
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <label className="form-label" style={{ marginBottom: '8px' }}>Alias del Destino</label>
+            <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Alias del Destino</label>
             <input type="text" className="form-input" value={alias} onChange={e => setAlias(e.target.value)} placeholder="Ej. Casa, Oficina, Baticueva..." style={{ width: '100%' }} />
           </div>
 
           <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '24px' }}>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>Calle <span style={{color: '#10b981'}}>*</span></label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Calle <span style={{color: '#10b981'}}>*</span></label>
               <input type="text" className="form-input" value={street} onChange={e => setStreet(e.target.value)} placeholder="Av. Siempre Viva" style={{ width: '100%' }} />
             </div>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>No. Ext <span style={{color: '#10b981'}}>*</span></label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>No. Ext <span style={{color: '#10b981'}}>*</span></label>
               <input type="text" className="form-input" value={exteriorNumber} onChange={e => setExteriorNumber(e.target.value)} placeholder="123" style={{ width: '100%' }} />
             </div>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>No. Int</label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>No. Int</label>
               <input type="text" className="form-input" value={interiorNumber} onChange={e => setInteriorNumber(e.target.value)} placeholder="Apt 4" style={{ width: '100%' }} />
             </div>
           </div>
 
           <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>Colonia / Fraccionamiento <span style={{color: '#10b981'}}>*</span></label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Colonia / Fraccionamiento <span style={{color: '#10b981'}}>*</span></label>
               <input type="text" className="form-input" value={neighborhood} onChange={e => setNeighborhood(e.target.value)} placeholder="Centro" style={{ width: '100%' }} />
             </div>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>Código Postal <span style={{color: '#10b981'}}>*</span></label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Código Postal <span style={{color: '#10b981'}}>*</span></label>
               <input type="text" className="form-input" value={zipCode} onChange={e => setZipCode(e.target.value)} placeholder="00000" style={{ width: '100%' }} />
             </div>
           </div>
 
           <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>Municipio / Alcaldía <span style={{color: '#10b981'}}>*</span></label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Municipio / Alcaldía <span style={{color: '#10b981'}}>*</span></label>
               <input type="text" className="form-input" value={city} onChange={e => setCity(e.target.value)} placeholder="Ciudad" style={{ width: '100%' }} />
             </div>
             <div>
-              <label className="form-label" style={{ marginBottom: '8px' }}>Estado <span style={{color: '#10b981'}}>*</span></label>
+              <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Estado <span style={{color: '#10b981'}}>*</span></label>
               <select className="form-input" value={stateName} onChange={e => setStateName(e.target.value)} style={{ width: '100%', cursor: 'pointer' }}>
                 <option value="">Selecciona Estado</option>
                 <option value="Aguascalientes">Aguascalientes</option>
@@ -280,7 +275,7 @@ export default function CreateClientPage() {
           </div>
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <label className="form-label" style={{ marginBottom: '8px' }}>Referencias Adicionales</label>
+            <label className="form-label" style={{ display: 'block', marginBottom: '16px' }}>Referencias Adicionales</label>
             <textarea className="form-input" value={references} onChange={e => setReferences(e.target.value)} placeholder="Ej. Casa blanca con portón negro, dejar con el guardia..." rows={3} style={{ width: '100%', resize: 'vertical' }} />
           </div>
           

@@ -30,15 +30,21 @@ export default function Home() {
       .catch(e => console.error(e));
 
     // Fetch Offer Products (Has Discount)
-    fetch('http://localhost:8000/api/v1/products/?size=16&status=PUBLISHED&has_discount=true')
+    fetch('http://localhost:8000/api/v1/products/?size=30&status=PUBLISHED&has_discount=true')
       .then(r => r.json())
-      .then(data => setOfferProducts(data.items || []))
+      .then(data => {
+        const withStock = (data.items || []).filter((p: any) => p.inventory_stocks?.some((s: any) => s.quantity > 0));
+        setOfferProducts(withStock.slice(0, 16));
+      })
       .catch(e => console.error(e));
 
     // Fetch Featured Products (is_featured = true)
-    fetch('http://localhost:8000/api/v1/products/?size=16&status=PUBLISHED&is_featured=true')
+    fetch('http://localhost:8000/api/v1/products/?size=30&status=PUBLISHED&is_featured=true')
       .then(r => r.json())
-      .then(data => setFeaturedProducts(data.items || []))
+      .then(data => {
+        const withStock = (data.items || []).filter((p: any) => p.inventory_stocks?.some((s: any) => s.quantity > 0));
+        setFeaturedProducts(withStock.slice(0, 16));
+      })
       .catch(e => console.error(e));
 
     // Fetch Brands

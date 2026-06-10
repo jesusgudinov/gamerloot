@@ -12,3 +12,4 @@ redis==5.0.1
 httpx==0.26.0
 python-dotenv==1.0.1
 python-slugify==8.0.4
+Pillow==10.2.0

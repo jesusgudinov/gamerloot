@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.product import Product
 from app.models.inventory import Warehouse, InventoryStock
-from app.core.pricing import round_to_marketing_price
+
 
 class CVAExcelParser:
     def __init__(self, file_path: str):
@@ -105,6 +105,11 @@ class CVAExcelParser:
             disp_cd = row["DISP CD"]
             marca = str(row.get("MARCA", "")).strip().upper()
             
+            # El UPC puede venir como float si pandas lo parsea así, le quitamos decimales.
+            upc_raw = row.get("UPC", "")
+            upc = str(int(upc_raw)) if isinstance(upc_raw, float) and not pd.isna(upc_raw) else str(upc_raw).strip()
+            if upc == "nan": upc = ""
+            
             # Limpiar nulos
             if pd.isna(sku) or pd.isna(precio_bruto):
                 continue
@@ -116,7 +121,15 @@ class CVAExcelParser:
             except ValueError:
                 continue
 
-            precio_mxn = precio_bruto * usd_rate if moneda == "DOLARES" or moneda == "USD" else precio_bruto
+            total_stock = disp + disp_cd
+            if total_stock <= 0:
+                continue # Omitir toda la fila si no hay inventario, para no crear basura
+
+            # Cálculo correcto de costos y precios
+            # 1. Moneda (Dolares = TC, Pesos = 1)
+            precio_mxn = precio_bruto * usd_rate if moneda in ["DOLARES", "USD"] else precio_bruto
+            # 2. Sumamos IVA (16%)
+            costo_proveedor = precio_mxn * 1.16
             
             # Buscar el producto
             result = await db.execute(select(Product).where(Product.sku == sku))
@@ -127,9 +140,9 @@ class CVAExcelParser:
                 from slugify import slugify
                 from app.models.product import Brand
                 
-                # CVA a veces tiene "DESCRIPCION" o a veces se sube sin ella según el formato que elijan exportar.
-                # Intentaremos buscarla, si no, usaremos un nombre genérico.
-                product_name = str(row.get('DESCRIPCION', row.get('TITULO', f"Producto CVA {sku}"))).strip()
+                # Obteniendo la Descripción (Título)
+                desc_val = row.get('DESCRIPCION DEL ARTICULO', row.get('DESCRIPCION', ''))
+                product_name = str(desc_val).strip()
                 if not product_name or product_name.lower() == 'nan':
                     product_name = f"Producto CVA {sku}"
                     
@@ -158,12 +171,16 @@ class CVAExcelParser:
 
                 cat_id = await TaxonomyEngine.categorize_product(db, "CVA", cat_path, product_name, all_internal_categories, map_dict)
 
+                # 3. Calculamos la base para el público (Costo + 30% utilidad)
+                precio_publico = costo_proveedor * 1.30
+
                 product = Product(
                     sku=sku,
+                    upc=upc if upc else None,
                     name=product_name,
                     slug=slug,
                     short_description=product_name,
-                    base_price=round_to_marketing_price(precio_mxn * 1.3), # 30% margen inicial
+                    base_price=round(precio_publico, 2),
                     brand_id=brand_obj.id if brand_obj else None,
                     category_id=cat_id,
                     status="PUBLISHED"
@@ -187,6 +204,9 @@ class CVAExcelParser:
 
                 if marca and (not product.brand or product.brand == ""):
                     product.brand = marca
+                    
+                if upc and not product.upc:
+                    product.upc = upc
 
                 # Actualizar stock CVA DISP
                 if disp >= 0:
@@ -199,9 +219,9 @@ class CVAExcelParser:
                     stock1 = stock_result.scalars().first()
                     if stock1:
                         stock1.quantity = disp
-                        stock1.supplier_cost = precio_mxn
+                        stock1.supplier_cost = costo_proveedor
                     else:
-                        new_stock1 = InventoryStock(product_id=product.id, warehouse_id=cva_disp.id, quantity=disp, supplier_cost=precio_mxn)
+                        new_stock1 = InventoryStock(product_id=product.id, warehouse_id=cva_disp.id, quantity=disp, supplier_cost=costo_proveedor)
                         db.add(new_stock1)
 
                 # Actualizar stock CVA DISP CD
@@ -215,9 +235,9 @@ class CVAExcelParser:
                     stock2 = stock_result2.scalars().first()
                     if stock2:
                         stock2.quantity = disp_cd
-                        stock2.supplier_cost = precio_mxn
+                        stock2.supplier_cost = costo_proveedor
                     else:
-                        new_stock2 = InventoryStock(product_id=product.id, warehouse_id=cva_disp_cd.id, quantity=disp_cd, supplier_cost=precio_mxn)
+                        new_stock2 = InventoryStock(product_id=product.id, warehouse_id=cva_disp_cd.id, quantity=disp_cd, supplier_cost=costo_proveedor)
                         db.add(new_stock2)
                 
                 updated += 1

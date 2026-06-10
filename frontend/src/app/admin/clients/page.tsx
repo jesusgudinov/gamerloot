@@ -130,7 +130,7 @@ export default function ClientsPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--card-bg)', border: '2px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                             {client.profile_picture_url ? (
-                              <img src={client.profile_picture_url} alt={client.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <img src={!client.profile_picture_url.startsWith('http') ? `http://localhost:8000${client.profile_picture_url.startsWith('/') ? '' : '/'}${client.profile_picture_url}` : client.profile_picture_url} alt={client.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
                               <User size={20} color="var(--primary)" />
                             )}
@@ -203,7 +203,7 @@ export default function ClientsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--card-bg)', border: '2px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   {viewingClient.profile_picture_url ? (
-                    <img src={viewingClient.profile_picture_url} alt={viewingClient.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={!viewingClient.profile_picture_url.startsWith('http') ? `http://localhost:8000${viewingClient.profile_picture_url.startsWith('/') ? '' : '/'}${viewingClient.profile_picture_url}` : viewingClient.profile_picture_url} alt={viewingClient.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <User size={32} color="var(--primary)" />
                   )}

@@ -7,9 +7,10 @@ from typing import Dict, Any
 from pydantic import BaseModel
 from slugify import slugify
 
-from app.db.session import get_db
+from app.db.session import get_db, AsyncSessionLocal
 from app.models.product import Product
 from app.models.inventory import Warehouse, InventoryStock
+from app.models.marketing import Campaign
 from app.services.quantum import QuantumImportsClient
 from app.core.config import settings
 
@@ -19,7 +20,10 @@ router = APIRouter()
 SYNC_STATUS = {
     "woocommerce": {"status": "idle", "progress": 0, "message": "Listo"},
     "quantum": {"status": "idle", "progress": 0, "message": "Listo"},
-    "techsmart": {"status": "idle", "progress": 0, "message": "Listo"}
+    "techsmart": {"status": "idle", "progress": 0, "message": "Listo"},
+    "cva": {"status": "idle", "progress": 0, "message": "Listo"},
+    "pch": {"status": "idle", "progress": 0, "message": "Listo"},
+    "importacion_digital": {"status": "idle", "progress": 0, "message": "Listo"}
 }
 
 class SyncStatusUpdate(BaseModel):
@@ -42,7 +46,11 @@ async def update_sync_status(update: SyncStatusUpdate):
         }
     return {"success": True}
 
-async def run_quantum_sync(db: AsyncSession):
+async def run_quantum_sync():
+    async with AsyncSessionLocal() as db:
+        await _run_quantum_sync(db)
+
+async def _run_quantum_sync(db: AsyncSession):
     SYNC_STATUS["quantum"] = {"status": "running", "progress": 10, "message": "Conectando a API..."}
     # 1. Traer datos de Quantum Imports
     client = QuantumImportsClient(settings.QUANTUM_API_KEY, settings.QUANTUM_API_SECRET)
@@ -118,23 +126,33 @@ async def run_quantum_sync(db: AsyncSession):
     # --- MOTOR DE PRECIOS ---
     from app.core.pricing import recalculate_product_price
     SYNC_STATUS["quantum"]["message"] = "Recalculando precios públicos con el motor inteligente..."
-    for pid in processed_product_ids:
+    total_recalc = len(processed_product_ids)
+    for idx, pid in enumerate(processed_product_ids):
         await recalculate_product_price(pid, db)
+        if idx % 50 == 0:
+            pct = 71 + int((idx/total_recalc)*28) if total_recalc > 0 else 99
+            SYNC_STATUS["quantum"] = {"status": "running", "progress": pct, "message": f"Recalculando precio {idx}/{total_recalc}..."}
+            await db.commit()
     await db.commit()
     
     SYNC_STATUS["quantum"] = {"status": "done", "progress": 100, "message": f"Sincronización finalizada. {updated_stock} productos actualizados."}
     print(f"✅ Sincronización finalizada. Stocks actualizados: {updated_stock}")
 
 @router.post("/trigger/quantum")
-async def trigger_quantum_sync(background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def trigger_quantum_sync(background_tasks: BackgroundTasks):
     """
     Desencadena la sincronización con Quantum Imports en segundo plano.
     """
-    background_tasks.add_task(run_quantum_sync, db)
+    background_tasks.add_task(run_quantum_sync)
     return {"message": "Sincronización con Quantum Imports iniciada en segundo plano."}
 
-async def run_techsmart_sync(db: AsyncSession):
+async def run_techsmart_sync():
+    async with AsyncSessionLocal() as db:
+        await _run_techsmart_sync(db)
+
+async def _run_techsmart_sync(db: AsyncSession):
     from app.services.techsmart import TechSmartScraper
+    
     SYNC_STATUS["techsmart"] = {"status": "running", "progress": 10, "message": "Iniciando scraper Playwright..."}
     scraper = TechSmartScraper()
     def update_techsmart_progress(progress_pct, msg):
@@ -192,8 +210,15 @@ async def run_techsmart_sync(db: AsyncSession):
     
     # --- MOTOR DE MAPEO DE CATEGORÍAS ---
     from app.services.taxonomy_engine import TaxonomyEngine
+    from app.services.exchange import ExchangeService
+    import httpx
+    import os
+    
     map_dict = await TaxonomyEngine.get_provider_map(db, "TechSmart")
     all_internal_categories = await TaxonomyEngine.get_all_categories_with_keywords(db)
+    
+    exchange_service = ExchangeService()
+    usd_rate = await exchange_service.get_usd_to_mxn(db)
     # -------------------------------------
 
     # --- LIMPIEZA DE INVENTARIO FANTASMA ---
@@ -202,111 +227,175 @@ async def run_techsmart_sync(db: AsyncSession):
     await db.commit()
     
     processed_product_ids = set()
+    
+    # Directorio para imágenes locales
+    media_dir = os.path.join("media", "products", "techsmart")
+    os.makedirs(media_dir, exist_ok=True)
 
-    for i, tsp in enumerate(ts_products):
-        sku = tsp["sku"]
-        prod_result = await db.execute(select(Product).where(Product.sku == sku))
-        product = prod_result.scalars().first()
-        
-        if not product:
-            # AUTO-CREACIÓN DE PRODUCTO
-            product_name = tsp.get("name", "").strip()
-            if not product_name:
-                product_name = f"Producto TechSmart {sku}"
+    async with httpx.AsyncClient() as http_client:
+        for i, tsp in enumerate(ts_products):
+            sku = tsp["sku"]
+            prod_result = await db.execute(select(Product).where(Product.sku == sku))
+            product = prod_result.scalars().first()
+            
+            # 1. Moneda y Costo Proveedor
+            rate = usd_rate if tsp.get("currency", "MXN") == "USD" else 1.0
+            
+            # original_price es el precio sin descuento
+            # promo_price es el precio con descuento (si no hay descuento, promo_price = original_price)
+            orig_cost_usd = tsp.get("original_price", 0)
+            promo_cost_usd = tsp.get("promo_price", 0)
+            if promo_cost_usd <= 0:
+                promo_cost_usd = orig_cost_usd
                 
-            slug = slugify(f"{sku}-{product_name}")[:100]
-            cat_id = await TaxonomyEngine.categorize_product(db, "TechSmart", "", product_name, all_internal_categories, map_dict)
+            orig_cost_mxn = orig_cost_usd * rate
+            promo_cost_mxn = promo_cost_usd * rate
             
-            product = Product(
-                sku=sku,
-                name=product_name,
-                slug=slug,
-                short_description=product_name,
-                base_price=round(tsp.get("price", 0) * 1.3, 2), # Margen base pre-recalculo
-                category_id=cat_id,
-                status="PUBLISHED"
-            )
-            db.add(product)
-            await db.flush()
-        else:
-            # Si el producto existe pero no tiene categoría, intentar inferirla por título
-            if not product.category_id:
-                cat_id = await TaxonomyEngine.categorize_product(db, "TechSmart", "", product.name, all_internal_categories, map_dict)
-                if cat_id:
-                    product.category_id = cat_id
+            # El costo real para nosotros es el promo_cost
+            actual_supplier_cost = promo_cost_mxn
+            
+            # Precio al público del "precio original" (para mostrar rebaja)
+            # IVA 16% y Utilidad 30%
+            from app.core.pricing import marketing_round
+            public_original = marketing_round(orig_cost_mxn * 1.16 * 1.30)
+            
+            if not product:
+                # AUTO-CREACIÓN DE PRODUCTO
+                product_name = tsp.get("name", "").strip()
+                if not product_name:
+                    product_name = f"Producto TechSmart {sku}"
                     
-        # Helper para actualizar stock
-        async def update_or_create_stock(warehouse_id, quantity, cost):
-            stock_result = await db.execute(
-                select(InventoryStock)
-                .where(InventoryStock.product_id == product.id)
-                .where(InventoryStock.warehouse_id == warehouse_id)
-            )
-            stock_entry = stock_result.scalars().first()
-            
-            if stock_entry:
-                stock_entry.quantity = quantity
-                stock_entry.supplier_cost = cost
-            else:
-                new_stock = InventoryStock(
-                    product_id=product.id,
-                    warehouse_id=warehouse_id,
-                    quantity=quantity,
-                    supplier_cost=cost
+                slug = slugify(f"{sku}-{product_name}")[:100]
+                cat_id = await TaxonomyEngine.categorize_product(db, "TechSmart", "", product_name, all_internal_categories, map_dict)
+                
+                product = Product(
+                    sku=sku,
+                    name=product_name,
+                    slug=slug,
+                    short_description=product_name,
+                    base_price=round(public_original, 2),
+                    category_id=cat_id,
+                    status="PUBLISHED"
                 )
-                db.add(new_stock)
-
-        # Actualizamos ambas bodegas
-        await update_or_create_stock(ts_warehouse_cdmx.id, tsp["stock_cdmx"], tsp["price"])
-        await update_or_create_stock(ts_warehouse_gdl.id, tsp["stock_gdl"], tsp["price"])
+                db.add(product)
+                await db.flush()
+            else:
+                # Actualizar el base_price al precio original calculado, 
+                # así cuando recalculate_product_price corra y vea un costo menor (promo), lo asignará a discount_price
+                product.base_price = round(public_original, 2)
+                
+                # Si el producto existe pero no tiene categoría, intentar inferirla por título
+                if not product.category_id:
+                    cat_id = await TaxonomyEngine.categorize_product(db, "TechSmart", "", product.name, all_internal_categories, map_dict)
+                    if cat_id:
+                        product.category_id = cat_id
             
-        updated_stock += 1
-        processed_product_ids.add(product.id)
-        if i % 20 == 0:
-            SYNC_STATUS["techsmart"] = {"status": "running", "progress": 20 + int((i/len(ts_products))*70), "message": f"Procesando {i} de {len(ts_products)}..."}
+            # 2. Descargar Imagen si existe y no la hemos guardado en nuestro bucket local
+            image_url = tsp.get("image_url")
+            if image_url:
+                # Descargamos si no hay imagen asignada, o si la imagen asignada es un link externo (no empieza con nuestro bucket)
+                if not product.main_image_url or not product.main_image_url.startswith(f"/{media_dir}"):
+                    try:
+                        ext = image_url.split('.')[-1].lower()
+                        if ext not in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
+                            ext = 'jpg'
+                        
+                        filename = f"{product.sku}.{ext}"
+                        filepath = os.path.join(media_dir, filename)
+                        
+                        if not os.path.exists(filepath):
+                            img_resp = await http_client.get(image_url, timeout=10.0)
+                            if img_resp.status_code == 200:
+                                with open(filepath, 'wb') as out_file:
+                                    out_file.write(img_resp.content)
+                                    
+                        # Guardamos la ruta relativa para servir estáticamente
+                        product.main_image_url = f"/{media_dir}/{filename}"
+                    except Exception as e:
+                        print(f"Error descargando imagen para {sku}: {e}")
+                        
+            # Helper para actualizar stock
+            async def update_or_create_stock(warehouse_id, quantity, cost):
+                stock_result = await db.execute(
+                    select(InventoryStock)
+                    .where(InventoryStock.product_id == product.id)
+                    .where(InventoryStock.warehouse_id == warehouse_id)
+                )
+                stock_entry = stock_result.scalars().first()
+                
+                if stock_entry:
+                    stock_entry.quantity = quantity
+                    stock_entry.supplier_cost = cost
+                else:
+                    new_stock = InventoryStock(
+                        product_id=product.id,
+                        warehouse_id=warehouse_id,
+                        quantity=quantity,
+                        supplier_cost=cost
+                    )
+                    db.add(new_stock)
+
+            # Actualizamos ambas bodegas con el costo real MXN
+            await update_or_create_stock(ts_warehouse_cdmx.id, tsp.get("stock_cdmx", 0), actual_supplier_cost)
+            await update_or_create_stock(ts_warehouse_gdl.id, tsp.get("stock_gdl", 0), actual_supplier_cost)
+                
+            updated_stock += 1
+            processed_product_ids.add(product.id)
+            if i % 20 == 0:
+                SYNC_STATUS["techsmart"] = {"status": "running", "progress": 20 + int((i/len(ts_products))*70), "message": f"Procesando {i} de {len(ts_products)}..."}
         
     await db.commit()
     
     # --- MOTOR DE PRECIOS ---
     from app.core.pricing import recalculate_product_price
     SYNC_STATUS["techsmart"]["message"] = "Recalculando precios públicos con el motor inteligente..."
-    for pid in processed_product_ids:
+    total_recalc = len(processed_product_ids)
+    for idx, pid in enumerate(processed_product_ids):
         await recalculate_product_price(pid, db)
+        if idx % 50 == 0:
+            pct = 90 + int((idx/total_recalc)*9) if total_recalc > 0 else 99
+            SYNC_STATUS["techsmart"] = {"status": "running", "progress": pct, "message": f"Recalculando precio {idx}/{total_recalc}..."}
+            await db.commit()
     await db.commit()
     
     SYNC_STATUS["techsmart"] = {"status": "done", "progress": 100, "message": "Catálogo de TechSmart actualizado."}
     print(f"✅ Sincronización Scraper finalizada. Productos de TechSmart cruzados: {updated_stock}")
 
 @router.post("/trigger/techsmart")
-async def trigger_techsmart_sync(background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def trigger_techsmart_sync(background_tasks: BackgroundTasks):
     """
     Desencadena el Scraper Asíncrono de TechSmart en segundo plano.
     """
-    background_tasks.add_task(run_techsmart_sync, db)
+    background_tasks.add_task(run_techsmart_sync)
     return {"message": "Motor de extracción TechSmart (Playwright) iniciado en segundo plano."}
 
 async def run_woocommerce_sync():
-    """
-    Ejecuta el script de migración de WooCommerce que ya construimos.
-    Al estar en un proceso de segundo plano, usamos asyncio.create_subprocess_exec
-    para no bloquear el event loop principal de FastAPI.
-    """
-    import asyncio
-    print("🚀 Iniciando migración de WooCommerce en segundo plano...")
-    process = await asyncio.create_subprocess_exec(
-        "python", "scripts/woocommerce_sync.py",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    stdout, stderr = await process.communicate()
-    if process.returncode == 0:
-        SYNC_STATUS["woocommerce"] = {"status": "done", "progress": 100, "message": "Sincronización WooCommerce finalizada."}
-        print("✅ Sincronización WooCommerce finalizada con éxito.")
-    else:
-        SYNC_STATUS["woocommerce"] = {"status": "error", "progress": 0, "message": "Error en migración."}
-        print(f"❌ Error en sincronización WooCommerce: {stderr.decode()}")
+    async with AsyncSessionLocal() as db:
+        await _run_woocommerce_sync(db)
 
-async def run_woocommerce_taxonomy_sync(db: AsyncSession):
+async def _run_woocommerce_sync(db: AsyncSession):
+    from app.services.woocommerce_sync_service import WooCommerceSyncService
+    
+    SYNC_STATUS["woocommerce"] = {"status": "running", "progress": 5, "message": "Iniciando migración de WooCommerce..."}
+    
+    try:
+        service = WooCommerceSyncService()
+        
+        def update_progress(progress_pct, msg):
+            status = "done" if progress_pct >= 100 else "running"
+            SYNC_STATUS["woocommerce"] = {"status": status, "progress": progress_pct, "message": msg}
+            
+        await service.run_sync(db, update_progress)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        SYNC_STATUS["woocommerce"] = {"status": "error", "progress": 0, "message": f"Error: {str(e)}"}
+
+async def run_woocommerce_taxonomy_sync():
+    async with AsyncSessionLocal() as db:
+        await _run_woocommerce_taxonomy_sync(db)
+
+async def _run_woocommerce_taxonomy_sync(db: AsyncSession):
     from app.services.woocommerce_taxonomy import WooCommerceTaxonomyService
     
     SYNC_STATUS["woocommerce_taxonomy"] = {"status": "running", "progress": 5, "message": "Conectando con WooCommerce API..."}
@@ -337,7 +426,9 @@ async def run_woocommerce_taxonomy_sync(db: AsyncSession):
         }
 
 @router.post("/trigger/woocommerce")
-async def trigger_woocommerce_sync(background_tasks: BackgroundTasks):
+async def trigger_woocommerce_sync(
+    background_tasks: BackgroundTasks
+):
     """
     Desencadena la migración maestra de WooCommerce en segundo plano.
     """
@@ -347,15 +438,18 @@ async def trigger_woocommerce_sync(background_tasks: BackgroundTasks):
 
 @router.post("/trigger/woocommerce-taxonomy")
 async def trigger_woocommerce_taxonomy_sync(
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db)
+    background_tasks: BackgroundTasks
 ):
     """Sincroniza categorías y atributos globales desde WooCommerce."""
     SYNC_STATUS["woocommerce_taxonomy"] = {"status": "running", "progress": 5, "message": "Iniciando sincronización de taxonomías..."}
-    background_tasks.add_task(run_woocommerce_taxonomy_sync, db)
+    background_tasks.add_task(run_woocommerce_taxonomy_sync)
     return {"message": "Sincronización de taxonomías iniciada en segundo plano."}
 
-async def process_excel_bg(provider: str, file_path: str, db: AsyncSession):
+async def process_excel_bg(provider: str, file_path: str):
+    async with AsyncSessionLocal() as db:
+        await _process_excel_bg(provider, file_path, db)
+
+async def _process_excel_bg(provider: str, file_path: str, db: AsyncSession):
     from app.services.exchange import ExchangeService
     exchange_service = ExchangeService()
     
@@ -393,8 +487,7 @@ async def process_excel_bg(provider: str, file_path: str, db: AsyncSession):
 async def upload_excel(
     provider: str,
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db)
+    file: UploadFile = File(...)
 ):
     """
     Sube y procesa una lista de precios en Excel para un proveedor específico.
@@ -424,7 +517,7 @@ async def upload_excel(
             tmp.write(content)
             tmp_path = tmp.name
             
-        background_tasks.add_task(process_excel_bg, provider, tmp_path, db)
+        background_tasks.add_task(process_excel_bg, provider, tmp_path)
         return {"message": f"Archivo cargado. Iniciando sincronización de {provider} en segundo plano."}
     except Exception as e:
         from fastapi import HTTPException

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Pencil, Trash2, Plus, Box, Download, Zap, CheckCircle2, FileEdit, Archive, Layers, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Pencil, Trash2, Plus, Box, Download, Zap, CheckCircle2, FileEdit, Archive, Layers, Filter, ChevronDown, ChevronUp, Wand2 } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import EditableCell from '@/components/ui/EditableCell';
 import BulkEditModal from '@/components/ui/BulkEditModal';
@@ -71,6 +71,11 @@ export default function AdminProducts() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Modal de Eliminación
+  const [productToDelete, setProductToDelete] = useState<{id: number, name: string} | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
 
   const handleQuickEdit = async (productId: number, field: string, value: any) => {
     try {
@@ -167,7 +172,15 @@ export default function AdminProducts() {
     }
   };
 
-  const handleToggleFeatured = async (productId: number, currentStatus: boolean) => {
+  const handleToggleFeatured = async (product: Product, currentStatus: boolean) => {
+    if (!currentStatus) {
+      const totalStock = product.inventory_stocks?.reduce((acc, stock) => acc + stock.quantity, 0) || 0;
+      if (totalStock <= 0) {
+        const proceed = window.confirm(`⚠️ ADVERTENCIA: El producto "${product.name}" no tiene stock en este momento.\n\nSi lo marcas como destacado, aparecerá en la pantalla principal pero los clientes no podrán comprarlo.\n\n¿Estás seguro de que deseas destacarlo de todos modos?`);
+        if (!proceed) return;
+      }
+    }
+
     try {
       const res = await fetch(`http://localhost:8000/api/v1/products/bulk-edit`, {
         method: 'PATCH',
@@ -176,13 +189,13 @@ export default function AdminProducts() {
           'Authorization': `Bearer ${token}` 
         },
         body: JSON.stringify({
-          product_ids: [productId],
+          product_ids: [product.id],
           action: 'FEATURED',
           payload: { is_featured: !currentStatus }
         })
       });
       if (res.ok) {
-        setProducts(products.map(p => p.id === productId ? { ...p, is_featured: !currentStatus } : p));
+        setProducts(products.map(p => p.id === product.id ? { ...p, is_featured: !currentStatus } : p));
       } else {
         console.error("Failed to update featured status");
       }
@@ -191,26 +204,28 @@ export default function AdminProducts() {
     }
   };
 
-  const handleDelete = async (productId: number, productName: string) => {
-    if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el producto "${productName}"? Esta acción no se puede deshacer.`)) {
-      try {
-        const res = await fetch(`http://localhost:8000/api/v1/products/${productId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (res.ok) {
-          setProducts(products.filter(p => p.id !== productId));
-          setTotalItems(prev => prev - 1);
-        } else {
-          const errorData = await res.json();
-          alert(errorData.detail || "Error al eliminar el producto.");
+  const executeDelete = async (productId: number) => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/products/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      } catch (error) {
-        console.error(error);
-        alert("Error de conexión al intentar eliminar.");
+      });
+      if (res.ok) {
+        setProducts(products.filter(p => p.id !== productId));
+        setTotalItems(prev => prev - 1);
+        setProductToDelete(null);
+      } else {
+        const errorData = await res.json();
+        alert(errorData.detail || "Error al eliminar el producto.");
       }
+    } catch (error) {
+      console.error(error);
+      alert("Error de conexión al intentar eliminar.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -596,7 +611,7 @@ export default function AdminProducts() {
                           type="checkbox" 
                           className="toggle-checkbox" 
                           checked={!!product.is_featured} 
-                          onChange={() => handleToggleFeatured(product.id, !!product.is_featured)} 
+                          onChange={() => handleToggleFeatured(product, !!product.is_featured)} 
                         />
                       </label>
                     </td>
@@ -605,7 +620,7 @@ export default function AdminProducts() {
                         <Link href={`/admin/catalog/products/${product.id}`} className="action-btn" title="Editar Producto">
                           <Pencil size={18} />
                         </Link>
-                        <button className="action-btn delete" title="Borrar Producto" onClick={() => handleDelete(product.id, product.name)}>
+                        <button className="action-btn delete" title="Borrar Producto" onClick={() => setProductToDelete({id: product.id, name: product.name})}>
                           <Trash2 size={18} />
                         </button>
                       </div>
@@ -626,6 +641,42 @@ export default function AdminProducts() {
             fetchProducts(currentPage);
           }} 
         />
+
+        {/* Delete Confirmation Modal */}
+        {productToDelete && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(8px)', padding: '16px' }}>
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', borderRadius: '16px', position: 'relative', overflow: 'hidden', padding: '32px 24px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+              <div style={{ position: 'absolute', top: '-50px', left: '50%', transform: 'translateX(-50%)', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, transparent 70%)', filter: 'blur(20px)', zIndex: 0 }}></div>
+              <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  <Trash2 size={32} />
+                </div>
+                <h2 style={{ margin: '0 0 12px 0', fontSize: '1.4rem', color: 'var(--text-color)' }}>¿Eliminar Producto?</h2>
+                <p style={{ margin: '0 0 24px 0', color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                  Estás a punto de eliminar permanentemente <br/><strong style={{color: 'var(--text-color)'}}>"{productToDelete.name}"</strong>.<br/><br/>Esta acción borrará sus variantes, imágenes e historial. No se puede deshacer.
+                </p>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                  <button 
+                    onClick={() => setProductToDelete(null)}
+                    disabled={isDeleting}
+                    style={{ padding: '12px 20px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-color)', cursor: isDeleting ? 'not-allowed' : 'pointer', fontWeight: 500, flex: 1, transition: 'background 0.2s' }}
+                    onMouseOver={e => !isDeleting && (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+                    onMouseOut={e => !isDeleting && (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={() => executeDelete(productToDelete.id)}
+                    disabled={isDeleting}
+                    style={{ padding: '12px 20px', borderRadius: '8px', background: '#ef4444', border: 'none', color: 'white', cursor: isDeleting ? 'not-allowed' : 'pointer', fontWeight: 600, flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', opacity: isDeleting ? 0.7 : 1 }}
+                  >
+                    {isDeleting ? 'Eliminando...' : 'Sí, Eliminar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Pagination Controls */}
         <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>

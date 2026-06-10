@@ -1,8 +1,9 @@
 "use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Check, ShoppingCart } from 'lucide-react';
+import { Plus, Check, ShoppingCart, Percent } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { getImageUrl } from '@/utils/imageUrl';
 
 interface FBTProps {
   mainProduct: any;
@@ -45,8 +46,8 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
           product_id: p.id,
           sku: p.sku || '',
           name: p.name,
-          price: p.discount_price || p.base_price,
-          image_url: p.main_image_url || '',
+          price: Number(p.discount_price || p.base_price),
+          image_url: getImageUrl(p.main_image_url) || '',
           quantity: 1
         });
       });
@@ -85,7 +86,7 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
               </div>
               <Link href={`/${mainProduct.slug}`}>
                 {mainProduct.main_image_url ? (
-                    <img src={mainProduct.main_image_url} alt={mainProduct.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  <img src={getImageUrl(mainProduct.main_image_url)} alt={mainProduct.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                 ) : (
                     <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Sin Foto</span>
                 )}
@@ -122,7 +123,7 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
                     </div>
                     
                     {p.main_image_url ? (
-                        <img src={p.main_image_url} alt={p.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                      <img src={getImageUrl(p.main_image_url)} alt={p.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                     ) : (
                         <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Sin Foto</span>
                     )}

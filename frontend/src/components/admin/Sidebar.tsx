@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Box, Truck, Megaphone, ChevronDown, ChevronRight, Package, ListTree, Tags, BadgeCheck, PlugZap, ShoppingBag, FileText, Users, LogOut, Network, Activity, RotateCcw } from 'lucide-react';
+import { LayoutDashboard, Box, Truck, Megaphone, ChevronDown, ChevronRight, Package, ListTree, Tags, BadgeCheck, PlugZap, ShoppingBag, FileText, Users, LogOut, Network, Activity, RotateCcw, Wand2 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 
@@ -47,6 +47,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }: { isOpen
         { href: '/admin/catalog/mapping', icon: Network, label: 'Mapeador de Proveedores' },
         { href: '/admin/catalog/reviews', icon: Megaphone, label: 'Reseñas' },
         { href: '/admin/catalog/questions', icon: FileText, label: 'Preguntas y Respuestas' },
+        { href: '/admin/catalog/optimization', icon: Wand2, label: 'Optimización de Imágenes' },
       ]
     },
     { 

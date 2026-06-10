@@ -5,6 +5,7 @@ import { ArrowLeft, Save, User, Camera, Loader2, Ban, CheckCircle } from 'lucide
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 export default function EditClientPage() {
   const { token } = useAuth();
@@ -161,38 +162,32 @@ export default function EditClientPage() {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--card-bg)', border: `2px solid ${isActive ? 'var(--primary)' : '#ef4444'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            {profilePictureUrl ? (
-              <img src={profilePictureUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: isActive ? 'none' : 'grayscale(100%)' }} />
-            ) : (
-              <Camera size={24} color="var(--text-muted)" />
-            )}
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>URL de Imagen de Perfil (Opcional)</label>
-            <input type="text" value={profilePictureUrl} onChange={e => setProfilePictureUrl(e.target.value)} placeholder="https://..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} />
-          </div>
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <label style={{ display: 'block', marginBottom: '16px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Imagen de Perfil</label>
+          <ImageUploader 
+            onUploadSuccess={(url) => setProfilePictureUrl(url)} 
+            currentImageUrl={profilePictureUrl} 
+          />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', position: 'relative', zIndex: 1 }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Nombre(s)</label>
+            <label style={{ display: 'block', marginBottom: '16px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Nombre(s)</label>
             <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Apellidos</label>
+            <label style={{ display: 'block', marginBottom: '16px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Apellidos</label>
             <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} />
           </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', position: 'relative', zIndex: 1 }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Teléfono Móvil</label>
+            <label style={{ display: 'block', marginBottom: '16px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Teléfono Móvil</label>
             <input type="text" value={phone} onChange={e => setPhone(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>RFC (Opcional)</label>
+            <label style={{ display: 'block', marginBottom: '16px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>RFC (Opcional)</label>
             <input type="text" value={rfc} onChange={e => setRfc(e.target.value)} placeholder="Para facturación" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)' }} />
           </div>
         </div>
