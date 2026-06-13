@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB
 from app.models.user import Base
 
 class Review(Base):
@@ -12,6 +13,9 @@ class Review(Base):
     
     rating = Column(Integer, nullable=False) # 1 a 5
     comment = Column(Text, nullable=True)
+    
+    images = Column(JSONB, default=list, nullable=False, server_default='[]')
+    votes = Column(JSONB, default=dict, nullable=False, server_default='{}')
     
     # Estados: PENDING, APPROVED, REJECTED
     status = Column(String, default="PENDING")

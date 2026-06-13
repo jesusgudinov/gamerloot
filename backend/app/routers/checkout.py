@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.sales import Order, OrderItem
 from app.models.product import Product
 from app.models.marketing import Coupon
+from app.models.inventory import InventoryStock, Warehouse
 from sqlalchemy import select, update
 import random
 from datetime import datetime, timezone
@@ -21,14 +22,103 @@ class QuoteShippingRequest(BaseModel):
     items: List[Dict[str, Any]] # { "product_id": 1, "quantity": 2, "weight": 1.5 }
 
 @router.post("/quote-shipping")
-async def quote_shipping(req: QuoteShippingRequest):
+async def quote_shipping(req: QuoteShippingRequest, db: AsyncSession = Depends(get_db)):
     if not req.destination_zip or len(req.destination_zip) != 5:
         raise HTTPException(status_code=400, detail="Código postal inválido")
         
-    skydropx = SkydropxService()
-    rates = await skydropx.quote_shipping(req.destination_zip, req.items)
+    origin_groups = {} # zip_code -> items
     
-    return {"rates": rates}
+    for item in req.items:
+        # Check stock location
+        query = select(Warehouse).join(InventoryStock).where(
+            InventoryStock.product_id == item.get("product_id"),
+            InventoryStock.quantity >= item.get("quantity", 1)
+        ).limit(1)
+        res = await db.execute(query)
+        warehouse = res.scalar_one_or_none()
+        
+        origin_zip = warehouse.zip_code if warehouse and warehouse.zip_code else "06700"
+        
+        if origin_zip not in origin_groups:
+            origin_groups[origin_zip] = []
+        origin_groups[origin_zip].append(item)
+        
+    skydropx = SkydropxService()
+    from app.core.packaging import calculate_virtual_parcel
+    import asyncio
+    
+    tasks = []
+    origins_used = list(origin_groups.keys())
+    
+    for origin_zip, items in origin_groups.items():
+        parcel = calculate_virtual_parcel(items)
+        tasks.append(skydropx.get_rates_v2(origin_zip, req.destination_zip, parcel))
+        
+    results = await asyncio.gather(*tasks)
+    
+    total_cost_std = 0.0
+    unified_breakdown_std = []
+    
+    total_cost_exp = 0.0
+    unified_breakdown_exp = []
+    
+    for origin_zip, rates in zip(origins_used, results):
+        if not rates:
+            continue
+        
+        # Standard: Cheapest
+        best_std = min(rates, key=lambda x: x["amount_local"])
+        total_cost_std += best_std["amount_local"]
+        unified_breakdown_std.append({
+            "origin_zip": origin_zip,
+            "provider": best_std["provider"],
+            "days": best_std["days"],
+            "cost": best_std["amount_local"],
+            "items": [i.get("product_id") for i in origin_groups[origin_zip]]
+        })
+        
+        # Express: Fastest (if tied, cheapest of fastest)
+        best_exp = min(rates, key=lambda x: (x["days"], x["amount_local"]))
+        total_cost_exp += best_exp["amount_local"]
+        unified_breakdown_exp.append({
+            "origin_zip": origin_zip,
+            "provider": best_exp["provider"],
+            "days": best_exp["days"],
+            "cost": best_exp["amount_local"],
+            "items": [i.get("product_id") for i in origin_groups[origin_zip]]
+        })
+        
+    if not unified_breakdown_std:
+        raise HTTPException(status_code=400, detail="No se pudieron cotizar envíos para los productos")
+
+    max_days_std = max([b["days"] for b in unified_breakdown_std])
+    combined_rate_std = {
+        "provider": "Loot Unificado",
+        "service_level_name": "Estándar",
+        "service_level_code": "GL_STD",
+        "amount_local": round(total_cost_std, 2),
+        "currency": "MXN",
+        "days": max_days_std,
+        "breakdown": unified_breakdown_std
+    }
+    
+    final_rates = [combined_rate_std]
+    
+    max_days_exp = max([b["days"] for b in unified_breakdown_exp])
+    # Only offer Express if it's faster or at least different in service/cost
+    if total_cost_exp > total_cost_std and max_days_exp < max_days_std:
+        combined_rate_exp = {
+            "provider": "Loot Unificado",
+            "service_level_name": "Express",
+            "service_level_code": "GL_EXP",
+            "amount_local": round(total_cost_exp, 2),
+            "currency": "MXN",
+            "days": max_days_exp,
+            "breakdown": unified_breakdown_exp
+        }
+        final_rates.append(combined_rate_exp)
+    
+    return {"rates": final_rates}
 
 class ValidateCouponRequest(BaseModel):
     code: str

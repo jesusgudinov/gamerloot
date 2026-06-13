@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.api.deps import get_current_active_user, require_permissions
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -24,7 +25,7 @@ def generate_folio():
 
 from sqlalchemy import func
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(require_permissions(["manage_sales"]))])
 async def get_sales_stats(db: AsyncSession = Depends(get_db)):
     # Total revenue (excluding Cancelado, Pendiente, Cotización)
     revenue_q = select(func.sum(Order.total)).where(Order.status.notin_(["Cancelado", "Pendiente", "Cotización"]))
@@ -74,13 +75,13 @@ async def get_sales_stats(db: AsyncSession = Depends(get_db)):
         "chart_data": chart_data
     }
 
-@router.get("/orders", response_model=List[OrderResponse])
+@router.get("/orders", response_model=List[OrderResponse], dependencies=[Depends(require_permissions(["manage_sales"]))])
 async def list_orders(
     q: Optional[str] = None,
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(Order).options(selectinload(Order.items)).order_by(desc(Order.created_at))
+    query = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).order_by(desc(Order.created_at))
     
     if status:
         query = query.where(Order.status == status)
@@ -98,7 +99,36 @@ async def list_orders(
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.post("/orders", response_model=OrderResponse)
+
+
+@router.get("/my-orders", response_model=List[OrderResponse])
+async def list_my_orders(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Devuelve los pedidos del usuario autenticado"""
+    query = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).where(Order.user_id == current_user.id).order_by(desc(Order.created_at))
+    result = await db.execute(query)
+    return result.scalars().all()
+
+@router.get("/my-orders/{folio}", response_model=OrderResponse)
+async def get_my_order_by_folio(
+    folio: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Devuelve un pedido específico del usuario autenticado por folio"""
+    query = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).where(
+        Order.folio == folio,
+        Order.user_id == current_user.id
+    )
+    result = await db.execute(query)
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    return order
+
+@router.post("/orders", response_model=OrderResponse, dependencies=[Depends(require_permissions(["manage_sales"]))])
 async def create_order(order_in: OrderCreate, db: AsyncSession = Depends(get_db)):
     folio = generate_folio()
     
@@ -175,28 +205,28 @@ async def create_order(order_in: OrderCreate, db: AsyncSession = Depends(get_db)
         user_to_update.total_spent = new_ltv
         # 1 USD/MXN = 1 XP
         user_to_update.xp = int(new_ltv)
-        # 10,000 XP per level (example scale for Gamer Loot)
-        new_level = 1 + (user_to_update.xp // 10000)
+        # 1,000 XP per level (scale for Gamer Loot)
+        new_level = 1 + (user_to_update.xp // 1000)
         user_to_update.level = new_level
         db.add(user_to_update)
         await db.commit()
         
-    stmt = select(Order).options(selectinload(Order.items)).where(Order.id == new_order.id)
+    stmt = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).where(Order.id == new_order.id)
     result = await db.execute(stmt)
     return result.scalar_one()
 
-@router.get("/orders/{id}", response_model=OrderResponse)
+@router.get("/orders/{id}", response_model=OrderResponse, dependencies=[Depends(require_permissions(["manage_sales"]))])
 async def get_order(id: int, db: AsyncSession = Depends(get_db)):
-    stmt = select(Order).options(selectinload(Order.items)).where(Order.id == id)
+    stmt = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).where(Order.id == id)
     result = await db.execute(stmt)
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     return order
 
-@router.put("/orders/{id}", response_model=OrderResponse)
+@router.put("/orders/{id}", response_model=OrderResponse, dependencies=[Depends(require_permissions(["manage_sales"]))])
 async def update_order(id: int, order_update: OrderUpdate, db: AsyncSession = Depends(get_db)):
-    stmt = select(Order).options(selectinload(Order.items)).where(Order.id == id)
+    stmt = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).where(Order.id == id)
     result = await db.execute(stmt)
     order = result.scalar_one_or_none()
     if not order:
@@ -272,8 +302,8 @@ async def update_order(id: int, order_update: OrderUpdate, db: AsyncSession = De
         user_to_update.total_spent = new_ltv
         # 1 USD/MXN = 1 XP
         user_to_update.xp = int(new_ltv)
-        # 10,000 XP per level
-        new_level = 1 + (user_to_update.xp // 10000)
+        # 1,000 XP per level
+        new_level = 1 + (user_to_update.xp // 1000)
         user_to_update.level = new_level
         db.add(user_to_update)
         await db.commit()
@@ -281,7 +311,7 @@ async def update_order(id: int, order_update: OrderUpdate, db: AsyncSession = De
     await db.refresh(order)
     return order
 
-@router.get("/reports/dashboard")
+@router.get("/reports/dashboard", dependencies=[Depends(require_permissions(["manage_sales"]))])
 async def get_sales_reports_dashboard(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
@@ -293,7 +323,7 @@ async def get_sales_reports_dashboard(
     if end_date:
         query = query.where(Order.created_at <= datetime.fromisoformat(end_date))
         
-    orders_res = await db.execute(query.options(selectinload(Order.items)))
+    orders_res = await db.execute(query.options(selectinload(Order.items).selectinload(OrderItem.product)))
     orders = orders_res.scalars().all()
     
     valid_orders = [o for o in orders if o.status not in ["Cancelado", "Cotización"]]
@@ -335,13 +365,13 @@ async def get_sales_reports_dashboard(
         "top_products": top_products
     }
 
-@router.get("/reports/export")
+@router.get("/reports/export", dependencies=[Depends(require_permissions(["manage_sales"]))])
 async def export_sales_report(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(Order).options(selectinload(Order.items)).order_by(desc(Order.created_at))
+    query = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).order_by(desc(Order.created_at))
     if start_date:
         query = query.where(Order.created_at >= datetime.fromisoformat(start_date))
     if end_date:

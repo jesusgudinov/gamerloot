@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import FetchInterceptor from "@/components/FetchInterceptor";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -25,9 +27,13 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <FetchInterceptor />
         <ThemeProvider>
-          <CartProvider>
-            {children}
-          </CartProvider>
+          <AuthProvider>
+            <CartProvider>
+              <GoogleOAuthProvider clientId="649272582040-ht9unbfa1u6gkgtb7v199d41c2o2lc5v.apps.googleusercontent.com">
+                {children}
+              </GoogleOAuthProvider>
+            </CartProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

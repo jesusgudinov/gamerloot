@@ -49,7 +49,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
-from app.routers import auth, products, sync, catalog, marketing, sales, clients, shipping, roles, users, storefront, checkout, mapping, interactions, addresses, rma, configurator, uploads
+from app.routers import auth, products, sync, catalog, marketing, sales, clients, shipping, roles, users, storefront, checkout, mapping, interactions, addresses, rma, configurator, uploads, support
 
 from app.api.deps import get_current_active_user, require_permissions
 from fastapi import Depends
@@ -58,8 +58,8 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticación"])
 app.include_router(products.router, prefix="/api/v1/products", tags=["Productos"])
 app.include_router(catalog.router, prefix="/api/v1/catalog", tags=["Catálogo Maestro"])
 app.include_router(marketing.router, prefix="/api/v1/marketing", tags=["Marketing"], dependencies=[Depends(require_permissions(["manage_marketing"]))])
-app.include_router(sales.router, prefix="/api/v1/sales", tags=["Ventas y Pedidos"], dependencies=[Depends(require_permissions(["manage_sales"]))])
-app.include_router(rma.router, prefix="/api/v1/sales/rma", tags=["RMA (Garantías)"], dependencies=[Depends(require_permissions(["manage_sales"]))])
+app.include_router(sales.router, prefix="/api/v1/sales", tags=["Ventas y Pedidos"])
+app.include_router(rma.router, prefix="/api/v1/sales/rma", tags=["RMA (Garantías)"])
 app.include_router(clients.router, prefix="/api/v1/clients", tags=["Clientes"], dependencies=[Depends(require_permissions(["manage_clients"]))])
 app.include_router(addresses.router, prefix="/api/v1/addresses", tags=["Direcciones"], dependencies=[Depends(get_current_active_user)])
 app.include_router(sync.router, prefix="/api/v1/sync", tags=["Motor de Sincronización"], dependencies=[Depends(require_permissions(["manage_sync"]))])
@@ -71,6 +71,7 @@ app.include_router(checkout.router, prefix="/api/v1/checkout", tags=["Checkout"]
 app.include_router(configurator.router, prefix="/api/v1/configurator", tags=["Configurador de PC"])
 app.include_router(mapping.router, prefix="/api/v1/mapping", tags=["Mapeo de Taxonomías"], dependencies=[Depends(require_permissions(["manage_catalog"]))])
 app.include_router(interactions.router, prefix="/api/v1/interactions", tags=["Reseñas y Q&A"])
+app.include_router(support.router, prefix="/api/v1/support", tags=["Soporte y Tickets"])
 app.include_router(uploads.router, prefix="/api/v1/uploads", tags=["Archivos y Bucket"])
 
 # Servir archivos estáticos del bucket local

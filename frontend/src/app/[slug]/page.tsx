@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Heart, Check, ShieldCheck, Truck, RotateCcw, Star, ChevronRight, ChevronLeft, Share2, Scale, MessageCircleQuestion, Zap } from 'lucide-react';
+import { ShoppingCart, Heart, Check, ShieldCheck, Truck, RotateCcw, Star, ChevronRight, ChevronLeft, Share2, BarChart2, MessageCircleQuestion, Zap } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/storefront/Navbar';
 import ProductCarousel from '@/components/storefront/ProductCarousel';
@@ -184,78 +184,98 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
           
           {/* Left: Gallery (Sticky) */}
           <div style={{ position: 'sticky', top: '100px', display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
-            {/* Main Image */}
-            <div style={{ width: '100%', height: '550px', background: '#fff', borderRadius: '16px', border: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', overflow: 'hidden', position: 'relative' }}>
+            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+              {/* Main Image */}
+              <div style={{ width: '100%', height: '550px', background: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', overflow: 'hidden', position: 'relative', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05)' }}>
+                
+                {gallery.length > 1 && (
+                  <button 
+                    onClick={() => {
+                      const currentIndex = gallery.indexOf(activeImage);
+                      const prevIndex = (currentIndex - 1 + gallery.length) % gallery.length;
+                      setActiveImage(gallery[prevIndex]);
+                    }}
+                    style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', zIndex: 10 }}
+                    onMouseOver={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.5)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; }}
+                  >
+                    <ChevronLeft size={24} style={{ marginRight: '2px' }} />
+                  </button>
+                )}
+
+                {activeImage ? (
+                  <img src={activeImage} alt={product.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                ) : (
+                  <span style={{ color: '#94a3b8' }}>Sin imagen</span>
+                )}
+
+                {gallery.length > 1 && (
+                  <button 
+                    onClick={() => {
+                      const currentIndex = gallery.indexOf(activeImage);
+                      const nextIndex = (currentIndex + 1) % gallery.length;
+                      setActiveImage(gallery[nextIndex]);
+                    }}
+                    style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', zIndex: 10 }}
+                    onMouseOver={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.5)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; }}
+                  >
+                    <ChevronRight size={24} style={{ marginLeft: '2px' }} />
+                  </button>
+                )}
+              </div>
               
+              {/* Thumbnails */}
               {gallery.length > 1 && (
-                <button 
-                  onClick={() => {
-                    const currentIndex = gallery.indexOf(activeImage);
-                    const prevIndex = (currentIndex - 1 + gallery.length) % gallery.length;
-                    setActiveImage(gallery[prevIndex]);
-                  }}
-                  style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', zIndex: 10 }}
-                  onMouseOver={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; }}
-                  onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.5)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; }}
-                >
-                  <ChevronLeft size={24} style={{ marginRight: '2px' }} />
-                </button>
-              )}
-
-              {activeImage ? (
-                <img src={activeImage} alt={product.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-              ) : (
-                <span style={{ color: '#94a3b8' }}>Sin imagen</span>
-              )}
-
-              {gallery.length > 1 && (
-                <button 
-                  onClick={() => {
-                    const currentIndex = gallery.indexOf(activeImage);
-                    const nextIndex = (currentIndex + 1) % gallery.length;
-                    setActiveImage(gallery[nextIndex]);
-                  }}
-                  style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', zIndex: 10 }}
-                  onMouseOver={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; }}
-                  onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.5)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; }}
-                >
-                  <ChevronRight size={24} style={{ marginLeft: '2px' }} />
-                </button>
+                <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px' }} className="hide-scroll">
+                  {gallery.map((imgUrl, idx) => (
+                    <div 
+                      id={`thumb-${idx}`}
+                      key={idx} 
+                      onClick={() => setActiveImage(imgUrl)}
+                      style={{ 
+                        width: '80px', height: '80px', flexShrink: 0, background: '#fff', borderRadius: '8px', 
+                        border: `2px solid ${activeImage === imgUrl ? 'var(--primary)' : 'var(--card-border)'}`, 
+                        cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        opacity: activeImage === imgUrl ? 1 : 0.6, transition: 'all 0.2s'
+                      }}
+                    >
+                      <img src={imgUrl} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-            
-            {/* Thumbnails */}
-            {gallery.length > 1 && (
-              <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px' }} className="hide-scroll">
-                {gallery.map((imgUrl, idx) => (
-                  <div 
-                    id={`thumb-${idx}`}
-                    key={idx} 
-                    onClick={() => setActiveImage(imgUrl)}
-                    style={{ 
-                      width: '80px', height: '80px', flexShrink: 0, background: '#fff', borderRadius: '8px', 
-                      border: `2px solid ${activeImage === imgUrl ? 'var(--primary)' : 'var(--card-border)'}`, 
-                      cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      opacity: activeImage === imgUrl ? 1 : 0.6, transition: 'all 0.2s'
-                    }}
-                  >
-                    <img src={imgUrl} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Right: Buy Box */}
-          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', minWidth: 0, padding: '40px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, width: '4px', height: '100%', background: 'var(--primary)' }}></div>
             
-            <div style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              <Link href={product.brand_relation?.has_storefront ? `/store/${product.brand_relation.slug}` : `/brand/${product.brand_relation?.slug || 'generic'}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <Link href={product.brand_relation?.has_storefront ? `/store/${product.brand_relation.slug}` : `/brand/${product.brand_relation?.slug || 'generic'}`} 
+                style={{ 
+                  color: 'var(--primary)', 
+                  textDecoration: 'none',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase', 
+                  letterSpacing: '1px',
+                  background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)',
+                  padding: '4px 12px',
+                  borderRadius: '16px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  transition: 'all 0.2s'
+                }}
+                className="hover-card"
+              >
                 {product.brand_relation?.name || 'Gamer Loot'}
               </Link>
             </div>
             
-            <h1 style={{ fontSize: '1.6rem', fontWeight: 700, lineHeight: '1.3', marginBottom: '16px', color: 'var(--foreground)' }}>
+            <h1 style={{ fontSize: '1.8rem', fontWeight: 800, lineHeight: '1.2', marginBottom: '16px', color: 'var(--foreground)' }}>
               {product.name}
             </h1>
 
@@ -270,13 +290,13 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
             </div>
 
             {/* Price Area */}
-            <div style={{ padding: '24px 0', borderTop: '1px solid var(--card-border)', borderBottom: '1px solid var(--card-border)', marginBottom: '24px' }}>
+            <div style={{ padding: '24px 0', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '24px' }}>
               {product.discount_price ? (
                 <>
                   <div style={{ fontSize: '1rem', textDecoration: 'line-through', color: 'var(--text-muted)', marginBottom: '4px' }}>
                     ${Number(product.base_price || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981', lineHeight: '1' }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981', lineHeight: '1', textShadow: '0 0 20px rgba(16, 185, 129, 0.3)' }}>
                     ${Number(product.discount_price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </div>
                   {product.discount_end_date && new Date(product.discount_end_date) > new Date() && (
@@ -292,7 +312,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                   )}
                 </>
               ) : (
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--foreground)', lineHeight: '1' }}>
+                <div className="text-gradient" style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: '1' }}>
                   ${Number(product.base_price || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                 </div>
               )}
@@ -330,7 +350,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                     transition: 'all 0.3s ease',
                     position: 'relative',
                     overflow: 'hidden',
-                    boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
+                    boxShadow: added ? '0 4px 15px rgba(16, 185, 129, 0.4)' : '0 4px 15px rgba(139, 92, 246, 0.5)'
                   }}
                 >
                   <span className="btn-text" style={{ transition: 'opacity 0.2s', opacity: isAdding ? 0 : 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -354,9 +374,9 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                 <button 
                   onClick={() => alert('Próximamente: Favoritos')}
                   title="Agregar a Favoritos"
-                  style={{ width: '54px', height: '54px', borderRadius: '12px', background: 'var(--card-bg)', border: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#ef4444'; }}
-                  onMouseOut={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--card-border)'; }}
+                  style={{ width: '54px', height: '54px', borderRadius: '12px', background: 'rgba(236, 72, 153, 0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ec4899', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(236, 72, 153, 0.2)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   <Heart size={22} />
                 </button>
@@ -365,11 +385,11 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                 <button 
                   onClick={() => alert('Próximamente: Comparativa')}
                   title="Comparar"
-                  style={{ width: '54px', height: '54px', borderRadius: '12px', background: 'var(--card-bg)', border: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseOver={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
-                  onMouseOut={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--card-border)'; }}
+                  style={{ width: '54px', height: '54px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#06b6d4', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.2)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
-                  <Scale size={22} />
+                  <BarChart2 size={22} />
                 </button>
 
                 {/* Share Button */}
@@ -379,9 +399,9 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                     alert('¡Enlace copiado al portapapeles!');
                   }}
                   title="Compartir"
-                  style={{ width: '54px', height: '54px', borderRadius: '12px', background: 'var(--card-bg)', border: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseOver={e => { e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.borderColor = '#3b82f6'; }}
-                  onMouseOut={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--card-border)'; }}
+                  style={{ width: '54px', height: '54px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.1)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   <Share2 size={22} />
                 </button>
@@ -393,9 +413,41 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
             )}
 
             {/* Small info */}
-            <div style={{ marginTop: '20px', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '30px' }}>
+            <div style={{ marginTop: '20px', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
               SKU: {product.sku} <span style={{ margin: '0 8px' }}>|</span> UPC: {product.upc || 'N/A'}
             </div>
+
+            {/* Bodega Tags */}
+            {product.inventory_stocks && product.inventory_stocks.filter((s: any) => s.quantity > 0 && s.warehouse).length > 0 && (
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '30px', flexWrap: 'wrap' }}>
+                {Array.from(new Set(
+                  product.inventory_stocks
+                    .filter((s: any) => s.quantity > 0 && s.warehouse)
+                    .map((s: any) => {
+                      const code = s.warehouse.internal_code || '';
+                      if (code.includes('CDMX')) return 'Bodega CDMX';
+                      if (code.includes('GDL')) return 'Bodega GDL';
+                      if (code.includes('MTY')) return 'Bodega MTY';
+                      return 'Bodega Foránea';
+                    })
+                )).map((loc: any, idx: number) => (
+                  <span key={idx} style={{ 
+                    padding: '6px 12px', 
+                    background: 'rgba(139, 92, 246, 0.15)', 
+                    border: '1px solid rgba(139, 92, 246, 0.3)', 
+                    borderRadius: '8px', 
+                    color: 'var(--primary)', 
+                    fontSize: '0.85rem', 
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <Truck size={14} /> Envío desde: {loc}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Badges / Logistics Neon Box */}
             <div style={{ 

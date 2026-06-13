@@ -6,15 +6,29 @@ from sqlalchemy.orm import selectinload
 import uuid
 
 from app.db.session import get_db
+from app.api.deps import require_permissions, get_current_active_user
+from app.models.user import User
 from app.models.sales import Order, OrderItem, RMARequest, RMAItem
 from app.models.inventory import InventoryStock, Warehouse
 from app.schemas.sales import RMACreate, RMAResponse, RMAUpdate
 
 router = APIRouter()
 
-@router.get("/", response_model=List[RMAResponse])
+@router.get("/", response_model=List[RMAResponse], dependencies=[Depends(require_permissions(["manage_sales"]))])
 async def list_rmas(status: Optional[str] = None, rma_type: Optional[str] = None, db: AsyncSession = Depends(get_db)):
     query = select(RMARequest).options(selectinload(RMARequest.items))
+    if status:
+        query = query.where(RMARequest.status == status)
+    if rma_type:
+        query = query.where(RMARequest.rma_type == rma_type)
+        
+    query = query.order_by(RMARequest.created_at.desc())
+    result = await db.execute(query)
+    return result.scalars().all()
+
+@router.get("/me", response_model=List[RMAResponse])
+async def list_my_rmas(status: Optional[str] = None, rma_type: Optional[str] = None, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    query = select(RMARequest).options(selectinload(RMARequest.items)).where(RMARequest.user_id == current_user.id)
     if status:
         query = query.where(RMARequest.status == status)
     if rma_type:
@@ -79,7 +93,7 @@ async def create_rma(req: RMACreate, db: AsyncSession = Depends(get_db)):
     res = await db.execute(select(RMARequest).options(selectinload(RMARequest.items)).where(RMARequest.id == new_rma.id))
     return res.scalars().first()
 
-@router.put("/{rma_id}", response_model=RMAResponse)
+@router.put("/{rma_id}", response_model=RMAResponse, dependencies=[Depends(require_permissions(["manage_sales"]))])
 async def update_rma(rma_id: int, update: RMAUpdate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(RMARequest).options(selectinload(RMARequest.items)).where(RMARequest.id == rma_id))
     rma = result.scalars().first()

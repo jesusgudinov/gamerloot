@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getImageUrl } from '@/utils/imageUrl';
 
 interface Brand {
   id: number;
@@ -110,7 +111,7 @@ export default function BrandCarousel({ brands }: BrandCarouselProps) {
               {brand.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img 
-                  src={brand.image_url} 
+                  src={getImageUrl(brand.image_url)} 
                   alt={brand.name} 
                   style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
                 />

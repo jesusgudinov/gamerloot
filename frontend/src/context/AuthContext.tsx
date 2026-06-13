@@ -6,7 +6,12 @@ import { useRouter, usePathname } from 'next/navigation';
 interface User {
   id: number;
   email: string;
+  username?: string;
   full_name: string;
+  phone_number?: string;
+  profile_picture_url?: string;
+  level?: number;
+  xp?: number;
   role: string | null;
   permissions: string[];
   is_superuser: boolean;
@@ -19,6 +24,7 @@ interface AuthContextType {
   hasPermission: (permission: string) => boolean;
   login: (token: string, userData: User) => void;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,7 +33,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   hasPermission: () => false,
   login: () => {},
-  logout: () => {}
+  logout: () => {},
+  updateUser: () => {}
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -39,7 +46,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const meRes = await fetch('http://localhost:8000/api/v1/auth/me', {
+        const isAdminContext = window.location.pathname.startsWith('/admin');
+        const contextParam = isAdminContext ? 'admin' : 'client';
+        
+        const meRes = await fetch(`http://localhost:8000/api/v1/auth/me?context=${contextParam}`, {
           credentials: 'include'
         });
         
@@ -75,9 +85,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(userData);
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    setUser(prev => prev ? { ...prev, ...userData } : null);
+  };
+
   const logout = async () => {
     try {
-      await fetch('http://localhost:8000/api/v1/auth/logout', {
+      const isAdminContext = window.location.pathname.startsWith('/admin');
+      await fetch(`http://localhost:8000/api/v1/auth/logout?context=${isAdminContext ? 'admin' : 'client'}`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -86,11 +101,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     setToken(null);
     setUser(null);
-    router.push('/admin/login');
+    
+    // Redirect to correct login page based on context
+    const isAdminContext = window.location.pathname.startsWith('/admin');
+    router.push(isAdminContext ? '/admin/login' : '/auth/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, hasPermission, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, hasPermission, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

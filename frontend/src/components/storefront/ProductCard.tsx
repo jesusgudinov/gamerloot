@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Heart, Scale, Star, Check } from 'lucide-react';
+import { ShoppingCart, Heart, BarChart2, Star, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 interface Product {
@@ -61,9 +61,10 @@ export default function ProductCard({ product }: { product: Product }) {
     <Link href={`/${product.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
       <div className="product-card group relative flex flex-col justify-between" style={{
         position: 'relative',
-        background: 'var(--card-bg)',
+        background: 'rgba(255, 255, 255, 0.02)',
         borderRadius: '16px',
-        border: '1px solid var(--card-border)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        backdropFilter: 'blur(16px)',
         overflow: 'hidden',
         transition: 'all 0.3s ease',
         height: '100%',
@@ -73,12 +74,12 @@ export default function ProductCard({ product }: { product: Product }) {
         {/* Badges */}
         <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10 }}>
           {product.is_featured && (
-            <span style={{ background: '#eab308', color: '#fff', fontSize: '0.7rem', fontWeight: 700, padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+            <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.3)', backdropFilter: 'blur(4px)', fontSize: '0.7rem', fontWeight: 700, padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Destacado
             </span>
           )}
           {product.discount_price && (
-            <span style={{ background: '#ef4444', color: '#fff', fontSize: '0.7rem', fontWeight: 700, padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+            <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', backdropFilter: 'blur(4px)', fontSize: '0.7rem', fontWeight: 700, padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Oferta
             </span>
           )}
@@ -88,26 +89,26 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="product-actions" style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10, opacity: 0, transform: 'translateX(10px)', transition: 'all 0.3s ease' }}>
           <button 
             onClick={(e) => handleAction(e, 'Favoritos')}
-            style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.9)', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'all 0.2s' }}
-            onMouseOver={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.transform = 'scale(1)'; }}
+            style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}
+            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(236, 72, 153, 0.2)'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}
             title="Agregar a Favoritos"
           >
             <Heart size={18} />
           </button>
           <button 
             onClick={(e) => handleAction(e, 'Comparar')}
-            style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.9)', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'all 0.2s' }}
-            onMouseOver={(e) => { e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.transform = 'scale(1)'; }}
+            style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}
+            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.2)'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}
             title="Comparar Producto"
           >
-            <Scale size={18} />
+            <BarChart2 size={18} />
           </button>
         </div>
 
         {/* Image */}
-        <div style={{ width: '100%', height: '220px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        <div style={{ width: '100%', height: '220px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           {product.main_image_url ? (
             <img 
               src={getImageUrl(product.main_image_url)} 
@@ -143,7 +144,7 @@ export default function ProductCard({ product }: { product: Product }) {
           <div style={{ marginTop: 'auto' }}>
             {product.discount_price ? (
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--foreground)' }}>
+                <span className="text-gradient" style={{ fontSize: '1.2rem', fontWeight: 800 }}>
                   ${Number(product.discount_price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                 </span>
                 <span style={{ fontSize: '0.85rem', textDecoration: 'line-through', color: 'var(--text-muted)' }}>
@@ -151,7 +152,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 </span>
               </div>
             ) : (
-              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--foreground)' }}>
+              <div className="text-gradient" style={{ fontSize: '1.2rem', fontWeight: 800 }}>
                 ${Number(product.base_price || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
               </div>
             )}
@@ -186,10 +187,10 @@ export default function ProductCard({ product }: { product: Product }) {
                 marginTop: '16px',
                 width: '100%',
                 padding: '10px',
-                borderRadius: '8px',
-                background: added ? '#10b981' : 'var(--card-border)',
-                color: added ? '#fff' : 'var(--foreground)',
-                border: 'none',
+                borderRadius: '10px',
+                background: added ? 'rgba(16, 185, 129, 0.15)' : 'rgba(139, 92, 246, 0.1)',
+                color: added ? '#10b981' : '#8b5cf6',
+                border: added ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(139, 92, 246, 0.2)',
                 fontWeight: 600,
                 display: 'flex',
                 alignItems: 'center',
@@ -239,8 +240,10 @@ export default function ProductCard({ product }: { product: Product }) {
             transform: scale(1.05);
           }
           .cart-btn:hover:not(.adding):not(.added) {
-            background: var(--primary) !important;
-            color: #ffffff !important;
+            background: rgba(139, 92, 246, 0.2) !important;
+            border-color: rgba(139, 92, 246, 0.4) !important;
+            color: #a855f7 !important;
+            transform: translateY(-2px);
           }
           
           @media (max-width: 768px) {

@@ -26,6 +26,11 @@ Al crear o modificar interfaces en el frontend (Next.js), todos los agentes debe
    - Éxito / Confirmar Compra: Verdes esmeralda (`#10b981`, `#059669`)
    - Precaución / Omitido: Amarillos/Naranjas (`#f59e0b`, `#eab308`)
    - Destructivo / Eliminar: Rojos (`#ef4444`)
+8. **Estándar Visual (El Dashboard como Fuente de Verdad)**: El diseño implementado en el `AdminDashboard` (`/admin/page.tsx`) y `API e Integración` es el estándar definitivo del sitio. Cualquier vista nueva (incluyendo interfaces de usuario como Carrito o Checkout) debe emular exactamente esta estructura:
+   - **Gradientes Radiales**: Los paneles grandes deben tener luces sutiles de fondo (ej. `background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)` con `filter: blur(30px)`) para añadir profundidad espacial.
+   - **Líneas de Acentuación**: Los contenedores principales o formularios deben incluir una línea lateral izquierda de 4px con el color de la temática (`<div style={{ width: '4px', height: '100%', background: 'var(--primary)' }}></div>`).
+   - **Íconos Enmarcados**: Los íconos de sección deben estar envueltos en un `div` con fondo translúcido (ej. `rgba(139,92,246,0.1)`), padding de 8px-10px y `border-radius: 10px-12px`.
+   - **Interactividad**: Aplica siempre la clase `.hover-card` a cualquier panel, botón o tarjeta que sea interactivo para heredar la animación estándar de flotación y sombra difuminada.
 
 ## Arquitectura de Backend y Operaciones Masivas (Catálogo)
 
@@ -52,3 +57,21 @@ Al trabajar en los sistemas internos del catálogo (Scraping, Procesamiento, Im�
    - **Regla de Redondeo (Precios Mercadológicos)**: Al calcular precios finales (con IVA, utilidad, etc.), el precio debe ajustarse a una terminación de marketing:
      - Si termina entre 0 y 4 (ej. `$554`), se redondea al `9` inferior (ej. `$549`).
      - Si termina entre 5 y 9 (ej. `$555`), se redondea al `9` superior (ej. `$559`).
+
+## Logística y Envíos Multi-Origen (Marketplace)
+
+Al trabajar con el checkout y las cotizaciones de envío (vía Skydropx), se debe seguir la siguiente arquitectura de "Envío Unificado":
+
+1. **Cotización Paralela por Origen**: Nunca se asume que todo sale de una sola bodega. El carrito debe dividirse agrupando los productos por el `zip_code` de la bodega (`Warehouse`) donde tengan stock (`InventoryStock`).
+2. **Cajas Virtuales**: Los productos que salen del mismo almacén deben empaquetarse en una "caja virtual" (sumando pesos y maximizando/sumando dimensiones) mediante la función `calculate_virtual_parcel` en `packaging.py`, para evitar que la API de Skydropx cobre envíos individuales redundantes.
+3. **API V2 Skydropx**: Se utiliza obligatoriamente la API V2 (`/v2/quotations`) de Skydropx. Se realizan peticiones asíncronas en paralelo (`asyncio.gather`) para cotizar cada ruta de origen.
+4. **Tarifa Unificada (Loot Unificado)**: El usuario nunca debe ver 3 o 4 selecciones de paquetería separadas para una sola compra. El backend (`checkout.py`) debe sumar el costo de la ruta más barata de cada origen para crear una tarifa consolidada "Estándar", y la ruta más rápida para una tarifa consolidada "Express".
+5. **Transparencia (Breakdown)**: Aunque el usuario paga una tarifa unificada, la respuesta debe contener un arreglo de `breakdown` que indique desde dónde viaja cada paquete y su ETA individual, para mostrarlo en el Checkout al estilo Amazon.
+
+## Interacciones y Contenido Generado por el Usuario (Reseñas y Q&A)
+
+Al desarrollar módulos que interactúen con el contenido de los usuarios (como reseñas de productos), se debe seguir el siguiente estándar:
+
+1. **Imágenes Locales de Reseñas**: Las imágenes que los clientes adjuntan a sus reseñas NO deben subirse a la nube (S3, Firebase). Al igual que los productos, deben alojarse en el disco local (`/media/reviews/`) y ser servidas estáticamente vía FastAPI para evitar costos externos.
+2. **Sistema de Votos Anti-Spam (JSONB)**: Para la lógica de votos útiles (Mano arriba / Mano abajo) de las reseñas, se debe almacenar el registro en la columna `votes` (tipo `JSONB`) en PostgreSQL, mapeando el ID del usuario (`user_id`) con su voto (`up` o `down`). Esto previene duplicidad de votos y es extremadamente eficiente sin necesidad de crear tablas pivote adicionales.
+3. **Autenticación en Paneles de Administración**: Las peticiones `fetch` que realicen acciones de moderación desde el dashboard (ej. responder o rechazar preguntas) DEBEN incluir explícitamente `credentials: 'include'` en sus cabeceras, de lo contrario las protecciones del backend rechazarán la petición al no identificar la cookie HttpOnly de la sesión `superuser`.

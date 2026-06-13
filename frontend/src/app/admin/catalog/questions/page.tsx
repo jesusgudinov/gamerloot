@@ -19,7 +19,8 @@ export default function AdminQuestions() {
     setLoading(true);
     try {
       const res = await fetch(`http://localhost:8000/api/v1/interactions/questions/admin`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include'
       });
       if (res.ok) {
         setQuestions(await res.json());
@@ -40,6 +41,7 @@ export default function AdminQuestions() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
         body: JSON.stringify({ answer_text: answerText })
       });
       if (res.ok) {
@@ -56,7 +58,8 @@ export default function AdminQuestions() {
     try {
       const res = await fetch(`http://localhost:8000/api/v1/interactions/questions/${id}/reject`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include'
       });
       if (res.ok) {
         fetchQuestions();

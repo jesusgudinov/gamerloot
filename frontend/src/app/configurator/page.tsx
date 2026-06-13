@@ -308,11 +308,17 @@ export default function ConfiguratorPage() {
         <div className="configurator-layout">
           
           <aside className="configurator-sidebar-left">
-            <div className="glass-panel" style={{ padding: '24px', position: 'sticky', top: '20px', borderRadius: '16px' }}>
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.2rem', marginBottom: '20px', color: 'var(--primary)', borderBottom: '1px solid var(--card-border)', paddingBottom: '16px' }}>
-                <Filter size={20} /> 
-                Filtros
-              </h2>
+            <div className="glass-panel" style={{ padding: '24px', position: 'sticky', top: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--accent-cyan)' }}></div>
+              <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%)', filter: 'blur(20px)', pointerEvents: 'none', zIndex: 0 }}></div>
+              
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '1.2rem', marginBottom: '20px', color: 'var(--text-color)', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', fontWeight: 600 }}>
+                  <div style={{ padding: '8px', background: 'rgba(6, 182, 212, 0.1)', borderRadius: '10px' }}>
+                    <Filter size={20} color="var(--accent-cyan)" />
+                  </div>
+                  Filtros Activos
+                </h2>
               
               {step.isVirtual ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No hay filtros para este paso.</p>
@@ -340,18 +346,23 @@ export default function ConfiguratorPage() {
                   ))}
                 </div>
               )}
+              </div>
             </div>
           </aside>
 
           <section className="configurator-main">
-            <div className="glass-panel" style={{ padding: '30px', minHeight: '600px', display: 'flex', flexDirection: 'column', position: 'relative', borderRadius: '16px' }}>
-              <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h1 style={{ fontSize: '2.2rem', margin: '0 0 8px 0', background: 'linear-gradient(135deg, #fff, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    Elige tu {step.label}
-                  </h1>
-                  {!step.isVirtual && <p style={{ color: 'var(--text-muted)' }}>Solo mostramos productos 100% compatibles con tu configuración actual.</p>}
-                </div>
+            <div className="glass-panel" style={{ padding: '30px', minHeight: '600px', display: 'flex', flexDirection: 'column', position: 'relative', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--primary)' }}></div>
+              <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none', zIndex: 0 }}></div>
+              
+              <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h1 style={{ fontSize: '2.2rem', margin: '0 0 8px 0', background: 'linear-gradient(135deg, #fff, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 800 }}>
+                      Elige tu {step.label}
+                    </h1>
+                    {!step.isVirtual && <p style={{ color: 'var(--text-muted)' }}>Solo mostramos productos 100% compatibles con tu configuración actual.</p>}
+                  </div>
                 {!step.required && !step.isVirtual && (
                   <button onClick={nextStep} className="btn-secondary" style={{ borderRadius: '20px', padding: '6px 16px', border: '1px solid var(--card-border)' }}>
                     Saltar este paso
@@ -439,15 +450,22 @@ export default function ConfiguratorPage() {
                   )}
                 </>
               )}
+              </div>
             </div>
           </section>
 
           <aside>
-            <div ref={summaryRef} className="glass-panel" style={{ padding: '24px', position: 'sticky', top: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none', zIndex: 0 }}></div>
+            <div ref={summaryRef} className="glass-panel summary-panel" style={{ padding: '24px', position: 'sticky', top: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }}></div>
+              <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none', zIndex: 0 }}></div>
               
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '16px' }}>Tu Ensamble</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
+                  <div style={{ padding: '8px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '10px' }}>
+                    <ShoppingCart size={20} color="#10b981" />
+                  </div>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 600 }}>Tu Ensamble</h2>
+                </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', minHeight: '300px' }}>
                   {steps.map(s => {
@@ -522,66 +540,93 @@ export default function ConfiguratorPage() {
       </main>
 
       {/* HIDDEN RECEIPT FOR HTML2CANVAS EXPORT */}
-      <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', width: '800px' }}>
+      <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', width: '1000px' }}>
         <div 
           ref={hiddenReceiptRef} 
           style={{ 
-            width: '800px', 
-            background: 'linear-gradient(135deg, #0f172a, #1e1b4b)', 
+            width: '1000px', 
+            background: '#06070B', // Solid color to prevent blur artifacts in html2canvas
             color: '#ffffff', 
-            padding: '60px', 
             fontFamily: 'sans-serif',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
-          {/* Decorative Background Elements */}
-          <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)', borderRadius: '50%' }}></div>
-          <div style={{ position: 'absolute', bottom: '-150px', left: '-150px', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(6,182,212,0.2) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+          {/* Faux Grid Background & Solid Accents */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '400px', background: 'radial-gradient(ellipse at top, rgba(139, 92, 246, 0.15), transparent 70%)', zIndex: 0 }}></div>
+          <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '100%', backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)', backgroundSize: '40px 40px', zIndex: 0 }}></div>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '8px', height: '100%', background: 'linear-gradient(180deg, #a855f7, #06b6d4, #10b981)', zIndex: 1 }}></div>
 
           {/* Header */}
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '30px', marginBottom: '40px' }}>
+          <div style={{ position: 'relative', zIndex: 2, padding: '50px 60px 40px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <div>
-              <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: 0, color: '#fff' }}>MI EPIC LOOT</h1>
-              <p style={{ color: '#a78bfa', fontSize: '1.2rem', marginTop: '10px' }}>Configuración Oficial - Gamer Loot</p>
+              <div style={{ display: 'inline-block', padding: '6px 12px', background: 'rgba(139, 92, 246, 0.2)', border: '1px solid rgba(139, 92, 246, 0.4)', borderRadius: '20px', color: '#a855f7', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '2px', marginBottom: '15px' }}>
+                CONFIGURACIÓN VERIFICADA
+              </div>
+              <h1 style={{ fontSize: '3.5rem', fontWeight: 900, margin: '0 0 10px 0', color: '#fff', letterSpacing: '-1px' }}>MI EPIC LOOT</h1>
+              <p style={{ color: '#94a3b8', fontSize: '1.2rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Construido en <strong style={{ color: '#fff' }}>GamerLoot.com</strong>
+              </p>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.1)', padding: '15px 25px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.2)', textAlign: 'right' }}>
-              <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8' }}>Consumo Estimado</p>
-              <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 'bold', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '8px' }}><Zap size={20} /> {totalWatts} W</p>
+            <div style={{ display: 'flex', gap: '20px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'right', minWidth: '150px' }}>
+                <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Consumo</p>
+                <p style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}><Zap size={24} /> {totalWatts}W</p>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'right', minWidth: '150px' }}>
+                <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Componentes</p>
+                <p style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}><Layers size={24} /> {steps.filter(s => !s.isVirtual && selectedProducts[s.id]).length}</p>
+              </div>
             </div>
           </div>
 
-          {/* Component List */}
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {steps.map(s => {
-              if (s.isVirtual) return null;
-              const item = selectedProducts[s.id];
-              return (
-                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.9rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{s.label}</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#fff', whiteSpace: 'normal', lineHeight: '1.4' }}>
-                      {item ? item.name : <span style={{ color: '#64748b', fontStyle: 'italic' }}>Sin Selección</span>}
+          {/* Component Grid */}
+          <div style={{ position: 'relative', zIndex: 2, padding: '40px 60px', flex: 1 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
+              {steps.map(s => {
+                if (s.isVirtual) return null;
+                const item = selectedProducts[s.id];
+                if (!item) return null; // Only show selected items on export
+                
+                return (
+                  <div key={s.id} style={{ display: 'flex', gap: '20px', alignItems: 'center', background: '#0f172a', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                    <div style={{ width: '80px', height: '80px', background: '#1e293b', borderRadius: '12px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                      {item.images?.[0] ? (
+                         <img src={item.images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      ) : (
+                         <ImageIcon size={30} color="#475569" />
+                      )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.8rem', color: '#06b6d4', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px', fontWeight: 700 }}>{s.label}</div>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#fff', lineHeight: '1.3', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {item.name}
+                      </div>
+                      <div style={{ marginTop: '8px', fontWeight: 800, fontSize: '1.2rem', color: '#a855f7' }}>
+                        ${item.price.toLocaleString('es-MX')}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ marginLeft: '30px', fontWeight: 'bold', fontSize: '1.2rem', color: '#fff' }}>
-                    {item ? `$${item.price.toLocaleString('es-MX')}` : '--'}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
           {/* Footer Totals */}
-          <div style={{ position: 'relative', zIndex: 1, marginTop: '40px', background: 'linear-gradient(90deg, rgba(139,92,246,0.2), rgba(6,182,212,0.2))', padding: '30px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ position: 'relative', zIndex: 2, background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1))', padding: '40px 60px', borderTop: '2px solid rgba(16, 185, 129, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
             <div>
-              <p style={{ margin: 0, color: '#94a3b8', fontSize: '1.2rem' }}>Total de la Configuración</p>
-              <p style={{ margin: 0, fontSize: '0.9rem', color: '#10b981', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <CheckCircle2 size={16} /> {wantsAssembly ? 'Ensamblaje Profesional Incluido' : 'Piezas por separado'}
+              <p style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                <CheckCircle2 size={22} /> {wantsAssembly ? 'Ensamblaje Profesional Incluido' : 'Componentes por separado'}
               </p>
+              <p style={{ margin: 0, color: '#94a3b8', fontSize: '1rem' }}>Cotización válida en tienda en línea.</p>
             </div>
-            <div style={{ fontSize: '3rem', fontWeight: 900, color: '#fff', textShadow: '0 4px 20px rgba(139,92,246,0.5)' }}>
-              ${total.toLocaleString('es-MX')}
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ margin: '0 0 5px 0', color: '#94a3b8', fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Inversión Total</p>
+              <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#fff', textShadow: '0 4px 20px rgba(16, 185, 129, 0.4)' }}>
+                ${total.toLocaleString('es-MX')}
+              </div>
             </div>
           </div>
         </div>

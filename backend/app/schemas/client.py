@@ -4,6 +4,7 @@ from datetime import datetime
 
 class AddressBase(BaseModel):
     alias: Optional[str] = None
+    icon_name: Optional[str] = "Home"
     street: str
     exterior_number: str
     interior_number: Optional[str] = None
@@ -19,6 +20,7 @@ class AddressCreate(AddressBase):
 
 class AddressUpdate(BaseModel):
     alias: Optional[str] = None
+    icon_name: Optional[str] = None
     street: Optional[str] = None
     exterior_number: Optional[str] = None
     interior_number: Optional[str] = None

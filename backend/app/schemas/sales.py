@@ -13,9 +13,17 @@ class OrderItemBase(BaseModel):
 class OrderItemCreate(OrderItemBase):
     pass
 
+class OrderItemProductInfo(BaseModel):
+    slug: str
+    main_image_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
 class OrderItemResponse(OrderItemBase):
     id: int
     order_id: int
+    product: Optional[OrderItemProductInfo] = None
 
     class Config:
         from_attributes = True

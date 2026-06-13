@@ -49,17 +49,17 @@ export default function ProductCarousel({ title, subtitle, bannerImageUrl, produ
           <img 
             src={bannerImageUrl} 
             alt={title} 
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6, zIndex: 0 }} 
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3, zIndex: 0 }} 
           />
         )}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, rgba(15, 23, 42, 0.95), transparent)', zIndex: 1 }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(to right, var(--card-bg) 30%, transparent)', zIndex: 1 }} />
         
         <div style={{ position: 'relative', zIndex: 2 }}>
-          <h2 className="carousel-title" style={{ fontWeight: 800, color: '#fff', marginBottom: '8px', letterSpacing: '-0.5px' }}>
+          <h2 className="carousel-title" style={{ fontWeight: 800, color: 'var(--foreground)', marginBottom: '8px', letterSpacing: '-0.5px' }}>
             {title}
           </h2>
           {subtitle && (
-            <p style={{ fontSize: '1.1rem', color: '#cbd5e1', maxWidth: '600px' }}>
+            <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)', maxWidth: '600px' }}>
               {subtitle}
             </p>
           )}
@@ -67,7 +67,7 @@ export default function ProductCarousel({ title, subtitle, bannerImageUrl, produ
       </div>
 
       {/* Carousel Section */}
-      <div className="carousel-body" style={{ position: 'relative', background: 'rgba(0,0,0,0.2)' }}>
+      <div className="carousel-body" style={{ position: 'relative', background: 'transparent' }}>
         
         {/* Navigation Arrows */}
         <button 

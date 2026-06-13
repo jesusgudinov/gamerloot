@@ -10,7 +10,10 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=True) # Nickname Gamer
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True) # Changed to nullable since Google Auth users might not have a password
+    google_id = Column(String, unique=True, index=True, nullable=True)
+    mfa_secret = Column(String, nullable=True)
+    mfa_enabled = Column(Boolean, default=False)
     
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
@@ -40,6 +43,7 @@ class UserAddress(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     alias = Column(String, nullable=True) # Ej: "Casa", "Oficina"
+    icon_name = Column(String, default="Home") # Icono de lucide-react
     street = Column(String, nullable=False)
     exterior_number = Column(String, nullable=False)
     interior_number = Column(String, nullable=True)

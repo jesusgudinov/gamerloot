@@ -18,45 +18,58 @@ export default function ProductAccordion({ description, technicalSpecs }: Produc
     const isOpen = openPanel === id;
     return (
       <div 
+        className={isOpen ? "glass-panel" : "hover-card"}
         style={{ 
-          marginBottom: '15px', 
-          borderRadius: '12px', 
-          background: 'var(--card-bg)',
-          border: isOpen ? '1px solid var(--primary)' : '1px solid var(--card-border)',
-          boxShadow: isOpen ? '0 0 15px rgba(139, 92, 246, 0.15)' : 'none',
-          transition: 'all 0.3s ease',
+          marginBottom: '20px', 
+          borderRadius: '16px', 
+          position: 'relative',
+          background: isOpen ? 'var(--card-bg)' : 'rgba(0,0,0,0.1)',
+          border: isOpen ? '1px solid var(--card-border)' : '1px solid transparent',
+          boxShadow: isOpen ? '0 10px 30px rgba(0,0,0,0.2)' : 'none',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           overflow: 'hidden'
         }}
         onMouseEnter={(e) => {
           if (!isOpen) {
-            e.currentTarget.style.borderColor = 'var(--primary)';
-            e.currentTarget.style.boxShadow = '0 0 10px rgba(139, 92, 246, 0.1)';
+            e.currentTarget.style.background = 'var(--card-bg)';
+            e.currentTarget.style.border = '1px solid var(--card-border)';
           }
         }}
         onMouseLeave={(e) => {
           if (!isOpen) {
-            e.currentTarget.style.borderColor = 'var(--card-border)';
-            e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.background = 'rgba(0,0,0,0.1)';
+            e.currentTarget.style.border = '1px solid transparent';
           }
         }}
       >
+        {/* Línea lateral de acentuación Premium (solo visible si está abierto) */}
+        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: 'var(--primary)', opacity: isOpen ? 1 : 0, transition: 'opacity 0.3s ease' }}></div>
         <button 
           onClick={() => togglePanel(id)}
           style={{ 
-            width: '100%', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            width: '100%', padding: '24px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             background: 'none', border: 'none', color: isOpen ? 'var(--primary)' : 'var(--foreground)',
-            fontSize: '1.1rem', fontWeight: 600, cursor: 'pointer', transition: 'color 0.3s ease'
+            fontSize: '1.2rem', fontWeight: 700, cursor: 'pointer', transition: 'color 0.3s ease', outline: 'none'
           }}
         >
-          {title}
-          {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {title}
+          </span>
+          <div style={{ 
+            width: '36px', height: '36px', borderRadius: '10px', 
+            background: isOpen ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255,255,255,0.05)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.3s ease', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+          }}>
+            <ChevronDown size={20} color={isOpen ? 'var(--primary)' : 'var(--text-muted)'} />
+          </div>
         </button>
         
         <div style={{ 
           maxHeight: isOpen ? '2000px' : '0', 
           opacity: isOpen ? 1 : 0, 
-          transition: 'all 0.4s ease-in-out',
-          padding: isOpen ? '0 20px 20px 20px' : '0 20px'
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          padding: isOpen ? '0 30px 30px 30px' : '0 30px'
         }}>
           {children}
         </div>
@@ -65,25 +78,26 @@ export default function ProductAccordion({ description, technicalSpecs }: Produc
   };
 
   return (
-    <div style={{ marginTop: '40px' }}>
-      <h3 style={{ fontSize: '1.5rem', marginBottom: '20px' }}>Información del Producto</h3>
+    <div style={{ marginTop: '60px', paddingTop: '40px', borderTop: '1px solid var(--card-border)' }}>
       
       <AccordionItem id="desc" title="Características y especificaciones">
         <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: description }} />
       </AccordionItem>
       
-      <AccordionItem id="specs" title="Detalles del producto">
+      <AccordionItem id="specs" title="Detalles Técnicos">
         {technicalSpecs && Object.keys(technicalSpecs).length > 0 ? (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <tbody>
-              {Object.entries(technicalSpecs).map(([key, value], index) => (
-                <tr key={index} style={{ borderBottom: '1px solid var(--card-border)' }}>
-                  <td style={{ padding: '15px 10px', fontWeight: 600, width: '40%', color: 'var(--text-muted)' }}>{key}</td>
-                  <td style={{ padding: '15px 10px' }}>{value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid var(--card-border)', background: 'rgba(0,0,0,0.2)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <tbody>
+                {Object.entries(technicalSpecs).map(([key, value], index) => (
+                  <tr key={index} style={{ borderBottom: index === Object.entries(technicalSpecs).length - 1 ? 'none' : '1px solid var(--card-border)' }}>
+                    <td style={{ padding: '16px 20px', fontWeight: 600, width: '40%', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', borderRight: '1px solid var(--card-border)' }}>{key}</td>
+                    <td style={{ padding: '16px 20px', color: 'var(--foreground)' }}>{value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <p style={{ color: 'var(--text-muted)' }}>No hay especificaciones técnicas detalladas para este producto.</p>
         )}

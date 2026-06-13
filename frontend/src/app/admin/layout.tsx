@@ -4,7 +4,6 @@ import Sidebar from '@/components/admin/Sidebar';
 import { Menu, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
-import { AuthProvider } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/admin/ProtectedRoute';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -24,15 +23,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Si estamos en la página de login, no mostrar la estructura del admin (sidebar, topbar)
   if (pathname === '/admin/login') {
-    return (
-      <AuthProvider>
-        {children}
-      </AuthProvider>
-    );
+    return <>{children}</>;
   }
 
   return (
-    <AuthProvider>
       <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: 'var(--background)' }}>
         {/* Top Bar for Mobile */}
         <div className="mobile-only mobile-topbar">
@@ -59,6 +53,5 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </ProtectedRoute>
         </main>
       </div>
-    </AuthProvider>
   );
 }

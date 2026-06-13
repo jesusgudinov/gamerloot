@@ -3,20 +3,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, Search, X } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { ShoppingCart, Search, X, User, Heart, BarChart2, Zap, Moon, Sun, Shield } from 'lucide-react';
 import { getImageUrl } from '@/utils/imageUrl';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Navbar() {
   const router = useRouter();
   const { cartCount, cartTotal } = useCart();
+  const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
   
+  const [mounted, setMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   
   const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -38,7 +47,7 @@ export default function Navbar() {
 
     const delayDebounceFn = setTimeout(() => {
       setIsSearching(true);
-      fetch(`http://localhost:8000/api/v1/products/?search=${encodeURIComponent(searchTerm)}&size=5`)
+      fetch(`http://localhost:8000/api/v1/products/?search=${encodeURIComponent(searchTerm)}&status=PUBLISHED&size=5`)
         .then(res => res.json())
         .then(data => {
           setSearchResults(data.items || []);
@@ -54,7 +63,7 @@ export default function Navbar() {
     e.preventDefault();
     if (searchTerm.trim()) {
       setShowDropdown(false);
-      router.push(`/catalog?search=${encodeURIComponent(searchTerm)}`);
+      router.push(`/catalog?search=${encodeURIComponent(searchTerm)}&status=PUBLISHED`);
     }
   };
 
@@ -91,12 +100,13 @@ export default function Navbar() {
               padding: '12px 40px',
               borderRadius: '24px',
               border: '1px solid var(--card-border)',
-              background: 'var(--card-bg)',
-              color: 'var(--foreground)',
+              background: 'var(--input-bg)',
+              color: 'var(--input-text)',
               outline: 'none',
               fontSize: '0.95rem',
-              transition: 'all 0.2s ease',
-              boxShadow: showDropdown ? '0 0 0 2px var(--primary)' : 'none'
+              transition: 'all 0.3s ease',
+              boxShadow: showDropdown ? '0 0 15px rgba(139, 92, 246, 0.2)' : 'inset 0 2px 4px rgba(0,0,0,0.05)',
+              backdropFilter: 'blur(8px)'
             }}
           />
           {searchTerm && (
@@ -112,7 +122,7 @@ export default function Navbar() {
 
         {/* Live Search Dropdown */}
         {showDropdown && (searchTerm.trim() !== '') && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: '100%', background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 1000 }}>
+          <div className="glass-panel" style={{ position: 'absolute', top: 'calc(100% + 12px)', left: 0, width: '100%', overflow: 'hidden', zIndex: 1000 }}>
             {isSearching ? (
               <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>Buscando...</div>
             ) : searchResults.length > 0 ? (
@@ -122,12 +132,18 @@ export default function Navbar() {
                     key={product.id} 
                     href={`/${product.slug}`}
                     onClick={() => setShowDropdown(false)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}
-                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                    onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', textDecoration: 'none', borderBottom: '1px solid var(--card-border)', transition: 'all 0.2s ease' }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = 'rgba(139, 92, 246, 0.08)';
+                      e.currentTarget.style.paddingLeft = '20px';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.paddingLeft = '16px';
+                    }}
                   >
                     {/* Thumbnail */}
-                    <div style={{ width: '40px', height: '40px', background: '#fff', borderRadius: '8px', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '44px', height: '44px', background: '#fff', borderRadius: '10px', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--card-border)' }}>
                       {product.main_image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={getImageUrl(product.main_image_url)} alt={product.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
@@ -137,10 +153,10 @@ export default function Navbar() {
                     </div>
                     {/* Details */}
                     <div style={{ flex: 1, overflow: 'hidden' }}>
-                      <div style={{ fontSize: '0.9rem', color: '#fff', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--foreground)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
                       <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '4px' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>${(product.discount_price || product.base_price).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        <span style={{ fontSize: '0.75rem', color: product.inventory_stocks?.some((s: any) => s.quantity > 0) ? '#10b981' : '#ef4444' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)' }}>${(product.discount_price || product.base_price).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: product.inventory_stocks?.some((s: any) => s.quantity > 0) ? '#10b981' : '#ef4444' }}>
                           {product.inventory_stocks?.some((s: any) => s.quantity > 0) ? 'En Stock' : 'Agotado'}
                         </span>
                       </div>
@@ -149,9 +165,9 @@ export default function Navbar() {
                 ))}
                 <div 
                   onClick={handleSearchSubmit}
-                  style={{ padding: '12px', textAlign: 'center', color: '#a78bfa', fontWeight: 600, cursor: 'pointer', background: 'rgba(139, 92, 246, 0.1)' }}
-                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)'}
-                  onMouseOut={(e) => e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)'}
+                  style={{ padding: '14px', textAlign: 'center', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', background: 'rgba(139, 92, 246, 0.05)', borderTop: '1px solid var(--card-border)', transition: 'background 0.2s ease' }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(139, 92, 246, 0.15)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'rgba(139, 92, 246, 0.05)'}
                 >
                   Ver todos los resultados
                 </div>
@@ -163,29 +179,78 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* Right Side (Cart & Admin) */}
-      <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+      {/* Right Side (Actions & Cart) */}
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+        
+        {/* Actions Group (Theme, Compare, Heart, User) */}
+        <div className="hide-on-mobile" style={{ display: 'flex', gap: '12px', alignItems: 'center', paddingRight: '20px', borderRight: '1px solid rgba(150,150,150,0.2)' }}>
+          
+          {mounted && (
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="icon-squircle icon-theme"
+              title="Cambiar Tema"
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          )}
+
+          <button className="icon-squircle icon-compare" title="Comparar (Próximamente)">
+            <BarChart2 size={20} />
+          </button>
+          <button className="icon-squircle icon-heart" title="Mis Favoritos (Próximamente)">
+            <Heart size={20} />
+          </button>
+          
+          {mounted && (
+            <Link href={user ? "/profile" : "/auth/login"} style={{ textDecoration: 'none' }}>
+              <button 
+                className="icon-squircle icon-user" 
+                title={user ? "Mi Cuenta" : "Iniciar Sesión"}
+                style={{ 
+                  background: user ? 'rgba(16, 185, 129, 0.1)' : 'rgba(139, 92, 246, 0.1)', 
+                  color: user ? '#10b981' : '#8b5cf6',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  padding: (user && user.profile_picture_url) ? 0 : undefined
+                }}
+              >
+                {user ? (
+                  user.profile_picture_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={getImageUrl(user.profile_picture_url)} alt="Perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <User size={20} />
+                  )
+                ) : (
+                  <User size={20} />
+                )}
+              </button>
+            </Link>
+          )}
+        </div>
+
         <Link href="/configurator" className="hide-on-mobile" style={{ textDecoration: 'none' }}>
-          <div style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(16, 185, 129, 0.2))', border: '1px solid rgba(139, 92, 246, 0.5)', padding: '8px 16px', borderRadius: '20px', color: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 0 15px rgba(139, 92, 246, 0.2)', transition: 'all 0.3s ease' }}>
-            <span style={{ fontSize: '1.2rem' }}>⚡</span> Arma tu PC
+          <div className="hover-card" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.02))', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '10px 20px', borderRadius: '12px', color: 'var(--text-color)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, width: '3px', height: '100%', background: 'var(--primary)' }}></div>
+            <Zap size={18} color="var(--primary)" /> Arma tu PC
           </div>
         </Link>
 
-        <Link href="/cart" style={{ color: 'var(--foreground)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }} className="hide-on-mobile">
-            <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--foreground)' }}>${cartTotal.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
+        <Link href="/cart" className="glass-panel hover-card" style={{ color: 'var(--foreground)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '16px', padding: '8px 16px', borderRadius: '12px', transition: 'all 0.2s' }}>
           <div style={{ position: 'relative' }}>
-            {/* CSS Animation Class 'cart-filled' when items are present */}
-            <ShoppingCart size={28} className={cartCount > 0 ? "cart-filled" : ""} color={cartCount > 0 ? "var(--primary)" : "var(--foreground)"} />
+            <ShoppingCart size={24} color="var(--text-color)" />
             {cartCount > 0 && (
-              <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: '#ef4444', color: 'white', padding: '2px 6px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', border: '2px solid var(--background)' }}>
+              <span style={{ position: 'absolute', top: '-8px', right: '-12px', background: 'var(--primary)', color: 'white', padding: '2px 6px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold', border: '2px solid var(--background)', boxShadow: '0 0 10px rgba(139, 92, 246, 0.5)' }}>
                 {cartCount}
               </span>
             )}
           </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }} className="hide-on-mobile">
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Mi Carrito</span>
+            <span className="text-gradient" style={{ fontSize: '1.1rem', fontWeight: 800 }}>${cartTotal.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
         </Link>
-        <Link href="/admin/login" className="btn-secondary hide-on-mobile" style={{ fontSize: '0.9rem' }}>Admin</Link>
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `
@@ -198,13 +263,53 @@ export default function Navbar() {
           }
         }
         
-        .cart-filled {
-          fill: rgba(139, 92, 246, 0.2);
-          transition: all 0.3s ease;
+        .icon-squircle {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          border: none;
+          transition: all 0.2s ease;
         }
         
-        .cart-filled:hover {
-          transform: scale(1.1);
+        .icon-theme {
+          background-color: var(--card-bg);
+          border: 1px solid var(--card-border);
+          color: var(--text-color);
+        }
+        .icon-theme:hover {
+          background-color: var(--card-border);
+          transform: translateY(-2px);
+        }
+
+        .icon-compare {
+          background-color: rgba(6, 182, 212, 0.1);
+          color: #06b6d4;
+        }
+        .icon-compare:hover {
+          background-color: rgba(6, 182, 212, 0.2);
+          transform: translateY(-2px);
+        }
+
+        .icon-heart {
+          background-color: rgba(236, 72, 153, 0.1);
+          color: #ec4899;
+        }
+        .icon-heart:hover {
+          background-color: rgba(236, 72, 153, 0.2);
+          transform: translateY(-2px);
+        }
+
+        .icon-user {
+          background-color: rgba(139, 92, 246, 0.1);
+          color: #8b5cf6;
+        }
+        .icon-user:hover {
+          background-color: rgba(139, 92, 246, 0.2);
+          transform: translateY(-2px);
         }
       `}} />
     </nav>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -11,8 +11,20 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const router = useRouter();
+
+  // MFA State
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+
+  // Si ya tiene sesión, mandarlo directo al dashboard
+  useEffect(() => {
+    if (user && (user.is_superuser || user.role)) {
+      window.location.href = '/admin';
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +36,7 @@ export default function AdminLogin() {
       formData.append('username', email);
       formData.append('password', password);
 
-      const res = await fetch('http://localhost:8000/api/v1/auth/login', {
+      const res = await fetch('http://localhost:8000/api/v1/auth/login?admin=true', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData,
@@ -38,10 +50,19 @@ export default function AdminLogin() {
         return;
       }
 
-      const { access_token } = await res.json();
+      const data = await res.json();
+      
+      if (data.mfa_required) {
+        setMfaRequired(true);
+        setMfaToken(data.temp_token);
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const { access_token } = data;
       
       // Obtener datos del usuario
-      const meRes = await fetch('http://localhost:8000/api/v1/auth/me', {
+      const meRes = await fetch('http://localhost:8000/api/v1/auth/me?context=admin', {
         headers: { 'Authorization': `Bearer ${access_token}` },
         credentials: 'include'
       });
@@ -55,7 +76,55 @@ export default function AdminLogin() {
         }
         
         login(access_token, userData);
-        router.push('/admin');
+        window.location.href = '/admin';
+      } else {
+        setError('Error al obtener perfil');
+        setIsSubmitting(false);
+      }
+    } catch (e) {
+      setError('Error de conexión con el servidor');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/auth/mfa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ temp_token: mfaToken, code: mfaCode, context: 'admin' })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        setError(errorData.detail || 'Código inválido');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { access_token } = await res.json();
+
+      // Obtener datos del usuario con el nuevo token
+      const meRes = await fetch('http://localhost:8000/api/v1/auth/me?context=admin', {
+        headers: { 'Authorization': `Bearer ${access_token}` },
+        credentials: 'include'
+      });
+      
+      if (meRes.ok) {
+        const userData = await meRes.json();
+        if (!userData.is_superuser && !userData.role) {
+          setError('No tienes permisos para acceder al panel administrativo');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        login(access_token, userData);
+        window.location.href = '/admin';
       } else {
         setError('Error al obtener perfil');
         setIsSubmitting(false);
@@ -91,10 +160,10 @@ export default function AdminLogin() {
               <Lock size={32} />
             </div>
             <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: '0 0 0.5rem 0', background: 'linear-gradient(to right, #fff, #a78bfa)', WebkitBackgroundClip: 'text', color: 'transparent', letterSpacing: '-0.5px' }}>
-              Panel Administrativo
+              {mfaRequired ? 'Verificación de Seguridad' : 'Panel Administrativo'}
             </h1>
             <p style={{ color: '#a1a1aa', margin: 0, fontSize: '0.95rem' }}>
-              Ingresa tus credenciales para la gestión del loot
+              {mfaRequired ? 'Ingresa el código MFA para autorizar tu acceso' : 'Ingresa tus credenciales para la gestión del loot'}
             </p>
           </div>
 
@@ -105,67 +174,120 @@ export default function AdminLogin() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', color: '#a1a1aa' }}>
-                Correo Electrónico
-              </label>
-              <div style={{ position: 'relative' }}>
-                <Mail size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
-                <input 
-                  type="email" 
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ejemplo@gamerloot.mx"
-                  className="login-input"
-                  style={{ 
-                    width: '100%', padding: '16px 16px 16px 48px', borderRadius: '14px', 
-                    border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.5)', 
-                    color: '#fff', fontSize: '1rem', transition: 'all 0.3s ease', outline: 'none'
-                  }} 
-                />
+          {!mfaRequired ? (
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', color: '#a1a1aa' }}>
+                  Correo Electrónico
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Mail size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
+                  <input 
+                    type="email" 
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="ejemplo@gamerloot.mx"
+                    className="login-input"
+                    style={{ 
+                      width: '100%', padding: '16px 16px 16px 48px', borderRadius: '14px', 
+                      border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.5)', 
+                      color: '#fff', fontSize: '1rem', transition: 'all 0.3s ease', outline: 'none'
+                    }} 
+                  />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', color: '#a1a1aa' }}>
-                Contraseña
-              </label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
-                <input 
-                  type="password" 
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="login-input"
-                  style={{ 
-                    width: '100%', padding: '16px 16px 16px 48px', borderRadius: '14px', 
-                    border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.5)', 
-                    color: '#fff', fontSize: '1rem', transition: 'all 0.3s ease', outline: 'none'
-                  }} 
-                />
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', color: '#a1a1aa' }}>
+                  Contraseña
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Lock size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
+                  <input 
+                    type="password" 
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="login-input"
+                    style={{ 
+                      width: '100%', padding: '16px 16px 16px 48px', borderRadius: '14px', 
+                      border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.5)', 
+                      color: '#fff', fontSize: '1rem', transition: 'all 0.3s ease', outline: 'none'
+                    }} 
+                  />
+                </div>
               </div>
-            </div>
 
-            <button 
-              type="submit" 
-              disabled={isSubmitting}
-              style={{ 
-                marginTop: '1.5rem', width: '100%', padding: '16px', borderRadius: '14px', 
-                fontSize: '1.1rem', fontWeight: 700, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px',
-                background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', color: '#fff', cursor: 'pointer',
-                boxShadow: '0 0 25px rgba(139, 92, 246, 0.4)', transition: 'all 0.3s ease',
-                opacity: isSubmitting ? 0.7 : 1
-              }}
-              onMouseOver={(e) => { if(!isSubmitting) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 35px rgba(139, 92, 246, 0.6)'; } }}
-              onMouseOut={(e) => { if(!isSubmitting) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 25px rgba(139, 92, 246, 0.4)'; } }}
-            >
-              {isSubmitting ? 'Iniciando Sistema...' : <>Autorizar Acceso <ArrowRight size={22} /></>}
-            </button>
-          </form>
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                style={{ 
+                  marginTop: '1.5rem', width: '100%', padding: '16px', borderRadius: '14px', 
+                  fontSize: '1.1rem', fontWeight: 700, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px',
+                  background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', border: 'none', color: '#fff', cursor: 'pointer',
+                  boxShadow: '0 0 25px rgba(139, 92, 246, 0.4)', transition: 'all 0.3s ease',
+                  opacity: isSubmitting ? 0.7 : 1
+                }}
+                onMouseOver={(e) => { if(!isSubmitting) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 35px rgba(139, 92, 246, 0.6)'; } }}
+                onMouseOut={(e) => { if(!isSubmitting) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 25px rgba(139, 92, 246, 0.4)'; } }}
+              >
+                {isSubmitting ? 'Iniciando Sistema...' : <>Autorizar Acceso <ArrowRight size={22} /></>}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleMfaSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', color: '#a1a1aa', textAlign: 'center' }}>
+                  Código de 6 dígitos
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type="text" 
+                    required
+                    maxLength={6}
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    className="login-input"
+                    style={{ 
+                      width: '100%', padding: '16px', borderRadius: '14px', 
+                      border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.5)', 
+                      color: '#fff', fontSize: '1.5rem', letterSpacing: '10px', textAlign: 'center', transition: 'all 0.3s ease', outline: 'none'
+                    }} 
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isSubmitting || mfaCode.length !== 6}
+                style={{ 
+                  marginTop: '1.5rem', width: '100%', padding: '16px', borderRadius: '14px', 
+                  fontSize: '1.1rem', fontWeight: 700, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#fff', cursor: 'pointer',
+                  boxShadow: '0 0 25px rgba(16, 185, 129, 0.4)', transition: 'all 0.3s ease',
+                  opacity: (isSubmitting || mfaCode.length !== 6) ? 0.7 : 1
+                }}
+                onMouseOver={(e) => { if(!isSubmitting && mfaCode.length === 6) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 35px rgba(16, 185, 129, 0.6)'; } }}
+                onMouseOut={(e) => { if(!isSubmitting && mfaCode.length === 6) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 25px rgba(16, 185, 129, 0.4)'; } }}
+              >
+                {isSubmitting ? 'Verificando...' : 'Verificar MFA'}
+              </button>
+              
+              <button 
+                type="button" 
+                onClick={() => { setMfaRequired(false); setMfaCode(''); }}
+                style={{ 
+                  background: 'none', border: 'none', color: '#71717a', fontSize: '0.9rem',
+                  fontWeight: 600, cursor: 'pointer', marginTop: '0.5rem', textDecoration: 'underline' 
+                }}
+              >
+                Volver a login
+              </button>
+            </form>
+          )}
 
         </div>
       </div>

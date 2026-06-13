@@ -78,7 +78,6 @@ export default function Home() {
             subtitle="Equipa tu setup con los mejores componentes a precios inigualables."
             bannerImageUrl="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop"
             products={offerProducts} 
-            bgColor="#0f172a" 
           />
         )}
         
@@ -88,7 +87,6 @@ export default function Home() {
             subtitle="Nuestros clientes lo prefieren. Únete a la élite del gaming."
             bannerImageUrl="https://images.unsplash.com/photo-1616588589676-62b3bd4ff6d2?q=80&w=2069&auto=format&fit=crop"
             products={featuredProducts} 
-            bgColor="#1e1b4b" 
           />
         )}
       </section>

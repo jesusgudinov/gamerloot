@@ -48,67 +48,87 @@ export default function StickyAddToCart({ product, showAfterY = 600 }: StickyAdd
   const finalPrice = product.discount_price || product.base_price;
 
   return (
-    <div style={{
+    <div className="glass-panel" style={{
       position: 'fixed',
       bottom: 0,
       left: 0,
       right: 0,
-      background: 'rgba(26, 26, 46, 0.95)',
-      backdropFilter: 'blur(10px)',
+      background: 'color-mix(in srgb, var(--card-bg) 85%, transparent)',
+      backdropFilter: 'blur(24px)',
+      WebkitBackdropFilter: 'blur(24px)',
       borderTop: '1px solid var(--primary)',
-      padding: '10px 20px',
+      padding: '12px 20px',
       zIndex: 999,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      boxShadow: '0 -5px 20px rgba(139, 92, 246, 0.2)',
+      boxShadow: '0 -10px 40px rgba(0,0,0,0.2)',
       transform: isVisible ? 'translateY(0)' : 'translateY(100%)',
-      transition: 'transform 0.3s ease-out'
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
+      {/* Luz radial superior */}
+      <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '30%', height: '1px', background: 'linear-gradient(90deg, transparent, var(--primary), transparent)', opacity: 0.5 }}></div>
+
       <div style={{ width: '100%', maxWidth: '1200px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{ width: '50px', height: '50px', background: '#fff', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '56px', height: '56px', background: '#fff', borderRadius: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--card-border)', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
             {getImageUrl(product.main_image_url) ? (
-              <img src={getImageUrl(product.main_image_url)} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src={getImageUrl(product.main_image_url)} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
             ) : (
               <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Sin img</span>
             )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '600px' }}>
+            <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '600px' }}>
               {product.name}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem' }}>
-              {product.discount_price && (
-                <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>{formatCurrency(product.base_price)}</span>
-              )}
-              <span style={{ color: '#10b981', fontWeight: 'bold', display: 'none' }}>{formatCurrency(finalPrice)}</span>
-            </div>
+            {/* Si es necesario mostrar atributos extra, pueden ir aquí */}
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           <div style={{ textAlign: 'right', display: 'block' }}>
-            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#10b981' }}>{formatCurrency(finalPrice)}</div>
+            {product.discount_price && (
+              <div style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '-2px' }}>{formatCurrency(product.base_price)}</div>
+            )}
+            <div className="text-gradient" style={{ fontSize: '1.4rem', fontWeight: 900 }}>{formatCurrency(finalPrice)}</div>
           </div>
           <button 
             onClick={handleAdd}
+            className={`cart-btn ${isAdding ? 'adding' : ''} ${added ? 'added' : ''}`}
             style={{
-              padding: '12px 30px',
-              background: 'var(--primary)',
+              padding: '0 32px',
+              height: '48px',
+              background: added ? '#10b981' : 'var(--primary)',
               color: '#fff',
               border: 'none',
-              borderRadius: '8px',
-              fontWeight: 'bold',
+              borderRadius: '12px',
+              fontWeight: 800,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '10px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)'
+              cursor: isAdding ? 'default' : 'pointer',
+              boxShadow: added ? '0 4px 15px rgba(16, 185, 129, 0.4)' : '0 4px 20px rgba(139, 92, 246, 0.5)',
+              transition: 'all 0.3s ease',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
-            <ShoppingCart size={18} /> Agregar al Carrito
+            <span className="btn-text" style={{ transition: 'opacity 0.2s', opacity: isAdding ? 0 : 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {added ? (
+                <><Check size={18} /> Agregado</>
+              ) : (
+                <><ShoppingCart size={18} /> Agregar al Carrito</>
+              )}
+            </span>
+            {isAdding && (
+              <div className="cart-animation-wrapper" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ShoppingCart size={20} className="animated-cart" color="#fff" />
+                <div className="animated-item" style={{ width: '8px', height: '8px', background: '#fff', borderRadius: '50%', position: 'absolute' }}></div>
+              </div>
+            )}
           </button>
         </div>
 

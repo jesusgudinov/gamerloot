@@ -39,6 +39,13 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       }
     }
 
+    // Bloqueo global: Si el usuario NO es superadmin y NO tiene ningún rol asignado,
+    // significa que es un cliente normal. No debe tener acceso al panel de admin.
+    if (!user.is_superuser && !user.role) {
+      setAuthorized(false);
+      return;
+    }
+
     if (requiredPermission && !hasPermission(requiredPermission)) {
       setAuthorized(false);
     } else {

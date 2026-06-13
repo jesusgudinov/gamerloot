@@ -12,6 +12,9 @@ class Warehouse(Base):
     provider_name = Column(String, index=True, nullable=False) # Ej: "PCH", "CT", "Quantum", "Interno"
     city = Column(String, nullable=False)
     state = Column(String, nullable=False)
+    zip_code = Column(String, nullable=True) # CP origen (ej. "06700")
+    address = Column(String, nullable=True) # Dirección para recolección
+    phone = Column(String, nullable=True) # Teléfono de contacto bodega
     
     # Relación con el stock
     stocks = relationship("InventoryStock", back_populates="warehouse")

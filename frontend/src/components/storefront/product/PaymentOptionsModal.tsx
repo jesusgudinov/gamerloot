@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { X, CreditCard } from 'lucide-react';
+import { X, CreditCard, ChevronDown } from 'lucide-react';
 
 interface PaymentOptionsModalProps {
   price: number;
@@ -33,9 +33,25 @@ export default function PaymentOptionsModal({ price }: PaymentOptionsModalProps)
         </div>
         <button 
           onClick={() => setIsOpen(true)}
-          style={{ background: 'none', border: 'none', color: 'var(--primary)', textDecoration: 'underline', cursor: 'pointer', padding: 0, marginTop: '4px', fontSize: '0.9rem' }}
+          className="hover-card"
+          style={{ 
+            background: 'color-mix(in srgb, var(--primary) 15%, transparent)', 
+            border: '1px solid color-mix(in srgb, var(--primary) 30%, transparent)', 
+            color: 'var(--primary)', 
+            textDecoration: 'none', 
+            cursor: 'pointer', 
+            padding: '6px 14px', 
+            borderRadius: '20px',
+            marginTop: '10px', 
+            fontSize: '0.85rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: 600,
+            transition: 'all 0.2s'
+          }}
         >
-          Ver opciones de pago y meses sin intereses ⌄
+          <CreditCard size={14} /> Ver opciones de pago y MSI <ChevronDown size={14} />
         </button>
       </div>
 

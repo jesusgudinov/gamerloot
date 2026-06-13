@@ -21,7 +21,7 @@ async def get_clients(
 ):
     # Filtramos a los usuarios que NO son superusuarios y NO tienen un rol asignado
     query = select(User).options(selectinload(User.addresses)).where(
-        (User.is_superuser == False) & (User.role_id == None)
+        (User.is_superuser == False) & (User.role_id.is_(None))
     )
     if q:
         search = f"%{q}%"
@@ -110,7 +110,7 @@ async def create_client(client_in: ClientCreate, db: AsyncSession = Depends(get_
 @router.get("/{client_id}", response_model=ClientResponse)
 async def get_client(client_id: int, db: AsyncSession = Depends(get_db)):
     query = select(User).options(selectinload(User.addresses)).where(
-        (User.id == client_id) & (User.is_superuser == False) & (User.role_id == None)
+        (User.id == client_id) & (User.is_superuser == False) & (User.role_id.is_(None))
     )
     result = await db.execute(query)
     user = result.scalars().first()
@@ -121,7 +121,7 @@ async def get_client(client_id: int, db: AsyncSession = Depends(get_db)):
 @router.patch("/{client_id}", response_model=ClientResponse)
 async def update_client(client_id: int, client_in: ClientUpdate, db: AsyncSession = Depends(get_db)):
     query = select(User).options(selectinload(User.addresses)).where(
-        (User.id == client_id) & (User.is_superuser == False) & (User.role_id == None)
+        (User.id == client_id) & (User.is_superuser == False) & (User.role_id.is_(None))
     )
     result = await db.execute(query)
     user = result.scalars().first()

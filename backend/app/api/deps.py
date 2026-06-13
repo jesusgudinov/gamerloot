@@ -14,7 +14,16 @@ from app.models.role import Role, Permission, RolePermission
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
 
 async def get_token_from_request(request: Request, token: str = Depends(oauth2_scheme)) -> str:
-    cookie_token = request.cookies.get("access_token")
+    app_context = request.headers.get("X-App-Context")
+    
+    if app_context == "admin":
+        cookie_token = request.cookies.get("admin_access_token")
+    elif app_context == "client":
+        cookie_token = request.cookies.get("client_access_token")
+    else:
+        # Fallback
+        cookie_token = request.cookies.get("admin_access_token") or request.cookies.get("client_access_token") or request.cookies.get("access_token")
+        
     if cookie_token:
         return cookie_token
     if token:

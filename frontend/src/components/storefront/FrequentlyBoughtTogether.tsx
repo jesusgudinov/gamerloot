@@ -62,10 +62,8 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
   };
 
   return (
-    <div style={{ 
-      margin: '60px 0', padding: '40px', background: 'var(--card-bg)', 
-      border: '1px solid var(--primary)', borderRadius: '16px',
-      boxShadow: '0 0 20px rgba(139, 92, 246, 0.15)', position: 'relative', overflow: 'hidden'
+    <div className="glass-panel" style={{ 
+      margin: '60px 0', padding: '40px', position: 'relative', overflow: 'hidden'
     }}>
       {/* Luces de Neón sutiles en los bordes */}
       <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px', background: 'linear-gradient(90deg, transparent, var(--primary), transparent)', opacity: 0.8 }}></div>
@@ -79,10 +77,10 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
           
           {/* Main Product */}
           <div style={{ width: '180px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ position: 'relative', width: '180px', height: '180px', background: '#fff', borderRadius: '12px', padding: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--primary)', boxShadow: '0 4px 15px rgba(139, 92, 246, 0.2)' }}>
+            <div style={{ position: 'relative', width: '180px', height: '180px', background: '#fff', borderRadius: '16px', padding: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--primary)', boxShadow: '0 4px 20px rgba(139, 92, 246, 0.3)' }}>
               {/* Checkbox fijo (Main product siempre seleccionado) */}
-              <div style={{ position: 'absolute', top: '10px', right: '10px', width: '24px', height: '24px', borderRadius: '6px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, cursor: 'not-allowed', opacity: 0.8 }}>
-                <Check size={16} color="#fff" strokeWidth={3} />
+              <div style={{ position: 'absolute', top: '10px', right: '10px', width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.2)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(139, 92, 246, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, cursor: 'not-allowed', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                <Check size={18} color="var(--primary)" strokeWidth={3} />
               </div>
               <Link href={`/${mainProduct.slug}`}>
                 {mainProduct.main_image_url ? (
@@ -97,7 +95,7 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
               <Link href={`/${mainProduct.slug}`} style={{ textDecoration: 'none', color: 'var(--foreground)', fontSize: '0.95rem', lineHeight: '1.3', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Este producto: </span>{mainProduct.name}
               </Link>
-              <div style={{ fontWeight: 'bold', color: mainProduct.discount_price ? '#10b981' : 'var(--foreground)', fontSize: '1.1rem', marginTop: '4px' }}>
+              <div className="text-gradient" style={{ fontWeight: 800, fontSize: '1.2rem', marginTop: '4px' }}>
                 ${formatCurrency(mainProduct.discount_price || mainProduct.base_price)}
               </div>
             </div>
@@ -115,11 +113,12 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
                 <div style={{ width: '180px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div 
                     onClick={() => toggleSelection(p.id)}
-                    style={{ position: 'relative', width: '180px', height: '180px', background: '#fff', borderRadius: '12px', padding: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: isSelected ? '2px solid var(--primary)' : '2px solid transparent', cursor: 'pointer', transition: 'all 0.2s', opacity: isSelected ? 1 : 0.6 }}
+                    className="hover-card"
+                    style={{ position: 'relative', width: '180px', height: '180px', background: '#fff', borderRadius: '16px', padding: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: isSelected ? '2px solid var(--primary)' : '1px solid var(--card-border)', cursor: 'pointer', transition: 'all 0.2s ease', opacity: isSelected ? 1 : 0.6, boxShadow: isSelected ? '0 4px 20px rgba(139, 92, 246, 0.3)' : 'none' }}
                   >
                     {/* Checkbox Interactivo */}
-                    <div style={{ position: 'absolute', top: '10px', right: '10px', width: '24px', height: '24px', borderRadius: '6px', background: isSelected ? 'var(--primary)' : 'transparent', border: isSelected ? 'none' : '2px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-                      {isSelected && <Check size={16} color="#fff" strokeWidth={3} />}
+                    <div style={{ position: 'absolute', top: '10px', right: '10px', width: '28px', height: '28px', borderRadius: '8px', background: isSelected ? 'rgba(139, 92, 246, 0.2)' : 'rgba(0, 0, 0, 0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: isSelected ? '1px solid rgba(139, 92, 246, 0.5)' : '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, transition: 'all 0.2s ease', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                      {isSelected && <Check size={18} color="var(--primary)" strokeWidth={3} />}
                     </div>
                     
                     {p.main_image_url ? (
@@ -130,10 +129,10 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
                   </div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', opacity: isSelected ? 1 : 0.6, transition: 'all 0.2s' }}>
-                    <Link href={`/${p.slug}`} style={{ textDecoration: 'none', color: 'var(--primary)', fontSize: '0.95rem', lineHeight: '1.3', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} onMouseOver={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseOut={(e) => e.currentTarget.style.textDecoration = 'none'}>
+                    <Link href={`/${p.slug}`} style={{ textDecoration: 'none', color: 'var(--foreground)', fontSize: '0.95rem', lineHeight: '1.3', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', transition: 'color 0.2s ease' }} onMouseOver={(e) => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.textDecoration = 'none'; }} onMouseOut={(e) => { e.currentTarget.style.color = 'var(--foreground)'; }}>
                       {p.name}
                     </Link>
-                    <div style={{ fontWeight: 'bold', color: p.discount_price ? '#10b981' : 'var(--foreground)', fontSize: '1.1rem', marginTop: '4px' }}>
+                    <div className="text-gradient" style={{ fontWeight: 800, fontSize: '1.2rem', marginTop: '4px' }}>
                       ${formatCurrency(p.discount_price || p.base_price)}
                     </div>
                   </div>
@@ -144,11 +143,12 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
         </div>
 
         {/* Right Side: Totals & Action */}
-        <div style={{ flex: '0 0 320px', display: 'flex', flexDirection: 'column', gap: '15px', paddingLeft: '30px', borderLeft: '1px solid var(--card-border)' }}>
+        <div style={{ flex: '0 0 320px', display: 'flex', flexDirection: 'column', gap: '15px', paddingLeft: '30px', position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: 'var(--primary)', borderRadius: '4px' }}></div>
           <div>
             <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>Precio total:</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '15px' }}>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--foreground)', lineHeight: '1.1' }}>
+              <div className="text-gradient" style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: '1.1' }}>
                 ${formatCurrency(totalDiscountPrice)}
               </div>
               {savingsAmount > 0 && (
@@ -170,13 +170,14 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
           <button 
             onClick={handleAddToCart}
             disabled={selectedBundle.length === 0}
+            className={`cart-btn ${isAdding ? 'adding' : ''} ${added ? 'added' : ''}`}
             style={{
               width: '100%',
               height: '54px',
               borderRadius: '12px',
-              background: added ? '#10b981' : 'var(--primary)',
-              color: '#fff',
-              border: 'none',
+              background: added ? 'rgba(16, 185, 129, 0.15)' : 'rgba(139, 92, 246, 0.1)',
+              color: added ? '#10b981' : '#8b5cf6',
+              border: added ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(139, 92, 246, 0.2)',
               fontSize: '1.1rem',
               fontWeight: 700,
               display: 'flex',
@@ -185,7 +186,8 @@ export default function FrequentlyBoughtTogether({ mainProduct, relatedProducts 
               gap: '10px',
               cursor: (isAdding || added || selectedBundle.length === 0) ? 'default' : 'pointer',
               transition: 'all 0.3s ease',
-              boxShadow: added ? 'none' : '0 4px 15px rgba(139, 92, 246, 0.4)',
+              position: 'relative',
+              overflow: 'hidden',
               opacity: selectedBundle.length === 0 ? 0.5 : 1
             }}
           >

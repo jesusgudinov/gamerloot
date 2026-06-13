@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { ShieldAlert, Search, RefreshCw, CheckCircle2, AlertCircle, Eye, Box, RotateCcw } from 'lucide-react';
+import { ShieldAlert, Search, RefreshCw, CheckCircle2, AlertCircle, Eye, Box, RotateCcw, X } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 
