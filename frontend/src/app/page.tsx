@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { ShoppingCart, Zap, Tag } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/storefront/Navbar';
+import Footer from '@/components/storefront/Footer';
 import BannerSlider from '@/components/BannerSlider';
 import ProductCarousel from '@/components/storefront/ProductCarousel';
 import BrandCarousel from '@/components/storefront/BrandCarousel';
+import CategoryCarousel from '@/components/storefront/CategoryCarousel';
 
 export default function Home() {
   const { addToCart, cartCount } = useCart();
@@ -91,6 +93,8 @@ export default function Home() {
         )}
       </section>
 
+      {/* Featured Categories Bubble Carousel */}
+      <CategoryCarousel />
 
       <style dangerouslySetInnerHTML={{__html: `
         .home-nav {
@@ -114,6 +118,7 @@ export default function Home() {
           }
         }
       `}} />
+      <Footer />
     </main>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { MessageCircleQuestion, Shield, X } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface UserBasicInfo {
   id: number;
@@ -25,6 +26,7 @@ interface ProductQAProps {
 }
 
 export default function ProductQA({ productId }: ProductQAProps) {
+  const { token, user } = useAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [newQuestion, setNewQuestion] = useState("");
@@ -50,24 +52,39 @@ export default function ProductQA({ productId }: ProductQAProps) {
 
   const handleAsk = () => {
     if (!newQuestion.trim()) return;
+    if (!token) {
+      alert("Debes iniciar sesión para hacer una pregunta.");
+      return;
+    }
     
     fetch(`http://localhost:8000/api/v1/interactions/questions/`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
+      credentials: 'include',
       body: JSON.stringify({
         product_id: productId,
         question_text: newQuestion
       })
     })
-    .then(res => res.json())
+    .then(async res => {
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Error al enviar la pregunta");
+      }
+      return res.json();
+    })
     .then(data => {
       alert('Pregunta enviada. Será revisada y respondida pronto.');
       setNewQuestion("");
       setShowQAForm(false);
     })
-    .catch(err => console.error(err));
+    .catch(err => {
+      console.error(err);
+      alert(err.message);
+    });
   };
 
   const getUserTitle = (level: number) => {

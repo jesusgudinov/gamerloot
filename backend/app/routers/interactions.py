@@ -221,7 +221,7 @@ async def vote_review(
 # --- QUESTIONS ---
 
 @router.get("/questions/product/{product_id}", response_model=List[QuestionResponse])
-async def get_product_questions(product_id: str, db: AsyncSession = Depends(get_db)):
+async def get_product_questions(product_id: int, db: AsyncSession = Depends(get_db)):
     query = select(Question).options(selectinload(Question.user)).where(
         Question.product_id == product_id,
         Question.status.in_(["PENDING", "ANSWERED"])

@@ -37,6 +37,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
   const [newReview, setNewReview] = useState<{rating: number, comment: string, images: string[]}>({ rating: 5, comment: '', images: [] });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImg, setIsUploadingImg] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`http://localhost:8000/api/v1/interactions/reviews/product/${productId}`)
@@ -148,7 +149,8 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
         body: JSON.stringify({
           product_id: productId,
           rating: newReview.rating,
-          comment: newReview.comment
+          comment: newReview.comment,
+          images: newReview.images
         })
       });
       
@@ -278,7 +280,13 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                   {review.images && review.images.length > 0 && (
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', overflowX: 'auto' }}>
                       {review.images.map((img, i) => (
-                        <img key={i} src={`http://localhost:8000${img}`} alt="Review img" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--card-border)' }} />
+                        <img 
+                          key={i} 
+                          src={`http://localhost:8000${img}`} 
+                          alt="Review img" 
+                          style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--card-border)', cursor: 'pointer' }} 
+                          onClick={() => setSelectedImage(`http://localhost:8000${img}`)}
+                        />
                       ))}
                     </div>
                   )}
@@ -369,6 +377,19 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
               {isSubmitting ? 'Enviando...' : 'Publicar Reseña'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Visor de Imagen en Tamaño Completo */}
+      {selectedImage && (
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+          onClick={() => setSelectedImage(null)}
+        >
+          <img src={selectedImage} alt="Full screen preview" style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()} />
+          <button onClick={() => setSelectedImage(null)} style={{ position: 'absolute', top: '25px', right: '30px', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', cursor: 'pointer', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} className="hover-card">
+            <X size={28} />
+          </button>
         </div>
       )}
     </div>

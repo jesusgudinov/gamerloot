@@ -5,6 +5,7 @@ import { ShoppingCart, Heart, Check, ShieldCheck, Truck, RotateCcw, Star, Chevro
 import { useCart } from '@/context/CartContext';
 import Navbar from '@/components/storefront/Navbar';
 import ProductCarousel from '@/components/storefront/ProductCarousel';
+import Footer from '@/components/storefront/Footer';
 import FrequentlyBoughtTogether from '@/components/storefront/FrequentlyBoughtTogether';
 import PaymentOptionsModal from '@/components/storefront/product/PaymentOptionsModal';
 import ProductAccordion from '@/components/storefront/product/ProductAccordion';
@@ -304,7 +305,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                       <Zap size={20} color="#eab308" className="pulse-animation" />
                       <div>
                         <div style={{ fontSize: '0.85rem', color: '#eab308', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Oferta Relámpago Termina En:</div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }} className="flash-countdown" data-end={product.discount_end_date}>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--foreground)' }} className="flash-countdown" data-end={product.discount_end_date}>
                           {timeLeft || 'Calculando...'}
                         </div>
                       </div>
@@ -555,6 +556,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
         }
       `}} />
       </main>
+      <Footer />
       <StickyAddToCart product={product} showAfterY={800} />
     </div>
   );

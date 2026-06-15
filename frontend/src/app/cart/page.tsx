@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Trash2, Plus, Minus, Tag, ArrowRight, Share2, Check, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
+import Footer from '@/components/storefront/Footer';
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, cartTotal, finalTotal, couponCode, couponDiscount, applyCoupon, removeCoupon } = useCart();
@@ -238,6 +239,7 @@ export default function CartPage() {
         </div>
         </div>
       </div>
+      <Footer />
     </main>
   );
 }

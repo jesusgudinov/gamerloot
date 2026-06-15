@@ -75,3 +75,50 @@ Al desarrollar módulos que interactúen con el contenido de los usuarios (como 
 1. **Imágenes Locales de Reseñas**: Las imágenes que los clientes adjuntan a sus reseñas NO deben subirse a la nube (S3, Firebase). Al igual que los productos, deben alojarse en el disco local (`/media/reviews/`) y ser servidas estáticamente vía FastAPI para evitar costos externos.
 2. **Sistema de Votos Anti-Spam (JSONB)**: Para la lógica de votos útiles (Mano arriba / Mano abajo) de las reseñas, se debe almacenar el registro en la columna `votes` (tipo `JSONB`) en PostgreSQL, mapeando el ID del usuario (`user_id`) con su voto (`up` o `down`). Esto previene duplicidad de votos y es extremadamente eficiente sin necesidad de crear tablas pivote adicionales.
 3. **Autenticación en Paneles de Administración**: Las peticiones `fetch` que realicen acciones de moderación desde el dashboard (ej. responder o rechazar preguntas) DEBEN incluir explícitamente `credentials: 'include'` en sus cabeceras, de lo contrario las protecciones del backend rechazarán la petición al no identificar la cookie HttpOnly de la sesión `superuser`.
+
+## Directrices para Agentes de Limpieza y Refactorización
+
+Para los agentes encargados de purgar código, eliminar archivos de prueba y limpiar la estructura del proyecto, es CRÍTICO entender qué archivos y directorios son **vitales**. Una eliminación incorrecta puede destruir la arquitectura del frontend o backend.
+
+### Directorios y Archivos Intocables (Backend)
+- `backend/app/`: Contiene toda la lógica del servidor (routers, models, schemas, core). ¡NO ELIMINAR NINGÚN ARCHIVO AQUÍ!
+- `backend/alembic/` y `backend/alembic.ini`: Esenciales para las migraciones de la base de datos PostgreSQL.
+- `backend/venv/`: Entorno virtual principal (las librerías se manejan aquí, no debe ser borrado a menos que se regenere con `requirements.txt`).
+- `backend/.env`: Configuración crítica de variables de entorno de acceso local.
+- `backend/media/` y `backend/uploads/`: Contienen las imágenes optimizadas de los productos y los assets almacenados dinámicamente. **CRÍTICO: NO BORRAR NINGUNA IMAGEN NI DIRECTORIO DENTRO DE ESTAS RUTAS.**
+- `backend/scripts/`: Scripts oficiales de mantenimiento o migración de datos.
+- `backend/requirements.txt`: Lista de dependencias del servidor.
+
+### Directorios y Archivos Intocables (Frontend)
+- `frontend/src/app/`: Sistema de enrutamiento principal (App Router de Next.js). Incluye layouts, vistas (`page.tsx`) y rutas de la API (`route.ts`).
+- `frontend/src/components/`: Componentes modulares y reutilizables de la interfaz.
+- `frontend/src/context/`: Contextos globales de React (como `AuthContext.tsx`).
+- `frontend/src/utils/` y `frontend/src/hooks/`: Utilidades críticas (ej. manejo de URLs de imágenes).
+- `frontend/public/`: Assets estáticos nativos (íconos, manifest, imágenes estáticas base).
+- **Archivos de Configuración Raíz**: `frontend/tailwind.config.ts`, `frontend/next.config.mjs`, `frontend/package.json`, `frontend/postcss.config.js`, `frontend/tsconfig.json`.
+
+### ✅ ¿Qué SÍ PUEDES (y debes) limpiar de forma segura?
+
+1. **Scripts de Prueba (Scratch Scripts)**:
+   - Cualquier archivo suelto en `backend/` o en la raíz (archivos como `test_*.py`, `check_*.py`, `list_*.py`, `debug_*.py`, `demo_*.py`) que hayan sido generados como experimentos aislados.
+   - Archivos con nombres como `test.json`, `mock_data.json` o `.md` aleatorios que no sean documentación formal.
+
+2. **Bases de Datos Locales Obsoletas**:
+   - Bases de datos SQLite (`*.sqlite`, `*.sqlite3`, `*.db` como `gamer_loot.db`, `app.db`) en el entorno de desarrollo y raíz. El sistema transicionó completamente a PostgreSQL local, por lo que estas son reliquias inútiles.
+
+3. **Componentes Frontend Huérfanos**:
+   - Archivos dentro de `frontend/src/components/` que hayan quedado completamente huérfanos o reemplazados por nuevas versiones (ej. si se creó `CardV2.tsx`, se puede purgar `Card.tsx`).
+   - **Requisito crítico:** Tras una búsqueda exhaustiva (`grep`), debes comprobar matemáticamente que **NO están siendo importados ni utilizados** en ningún otro archivo de la aplicación antes de borrarlos.
+
+4. **Archivos Basura y Logs**:
+   - Archivos de logs pesados (ej. `backend.log`) pueden ser truncados si ocupan mucho espacio.
+   - Archivos basura del SO como `.DS_Store`, `Thumbs.db`, etc.
+   - Imágenes duplicadas en resoluciones no optimizadas si su versión `.webp` de 1000x1000px ya fue comprobada.
+
+#### Directorios Autogenerados Críticos
+- No intentes "limpiar" `frontend/node_modules/` o `frontend/.next/`. Aunque son autogenerados, borrarlos detendrá el servidor de desarrollo en curso.
+
+#### Raíz del Proyecto / Contexto de IA
+- `AGENTS.md`: ¡Este archivo! Es el cerebro de las reglas de los agentes. NUNCA lo elimines.
+
+**Regla de Oro para el Agente de Limpieza:** Si tienes duda sobre un archivo en los directorios `app/` o `src/`, asume que es vital y PREGUNTA al usuario antes de ejecutar un comando `rm`. Nunca uses comandos de borrado masivo (`rm -rf *`) sin filtros estrictos.

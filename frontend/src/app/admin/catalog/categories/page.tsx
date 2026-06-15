@@ -14,9 +14,13 @@ interface Category {
   slug: string;
   description?: string;
   parent_id?: number | null;
+  icon?: string;
   image_url?: string;
+  promo_image_url?: string;
   is_active: boolean;
+  is_featured: boolean;
   is_for_configurator: boolean;
+  show_in_menu: boolean;
   keywords?: string[];
 }
 
@@ -35,9 +39,13 @@ export default function AdminCategories() {
     slug: '',
     description: '',
     parent_id: '',
+    icon: '',
     image_url: '',
+    promo_image_url: '',
     is_active: true,
+    is_featured: false,
     is_for_configurator: false,
+    show_in_menu: true,
     keywords: ''
   });
   const [saving, setSaving] = useState(false);
@@ -91,9 +99,13 @@ export default function AdminCategories() {
         slug: category.slug,
         description: category.description || '',
         parent_id: category.parent_id?.toString() || '',
+        icon: category.icon || '',
         image_url: category.image_url || '',
+        promo_image_url: category.promo_image_url || '',
         is_active: category.is_active,
+        is_featured: category.is_featured || false,
         is_for_configurator: category.is_for_configurator,
+        show_in_menu: category.show_in_menu !== undefined ? category.show_in_menu : true,
         keywords: category.keywords ? category.keywords.join(', ') : ''
       });
     } else {
@@ -103,9 +115,13 @@ export default function AdminCategories() {
         slug: '',
         description: '',
         parent_id: '',
+        icon: '',
         image_url: '',
+        promo_image_url: '',
         is_active: true,
+        is_featured: false,
         is_for_configurator: false,
+        show_in_menu: true,
         keywords: ''
       });
     }
@@ -145,9 +161,13 @@ export default function AdminCategories() {
         slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
         description: formData.description || null,
         parent_id: formData.parent_id ? parseInt(formData.parent_id) : null,
+        icon: formData.icon || null,
         image_url: formData.image_url || null,
+        promo_image_url: formData.promo_image_url || null,
         is_active: formData.is_active,
+        is_featured: formData.is_featured,
         is_for_configurator: formData.is_for_configurator,
+        show_in_menu: formData.show_in_menu,
         keywords: formData.keywords ? formData.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : null
       };
 
@@ -280,20 +300,21 @@ export default function AdminCategories() {
                 categories.map((category) => (
                   <tr key={category.id} style={{ borderBottom: '1px solid var(--card-border)', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                     <td style={{ padding: '16px' }}>
-                      {category.image_url ? (
-                        category.image_url.includes('/') || category.image_url.includes('.') ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={!category.image_url.startsWith('http') ? `http://localhost:8000${category.image_url.startsWith('/') ? '' : '/'}${category.image_url}` : category.image_url} alt={category.name} style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '6px' }} />
-                        ) : (
-                          <div style={{ width: '32px', height: '32px', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--primary)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <DynamicIcon name={category.image_url} size={20} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {category.icon ? (
+                          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <DynamicIcon name={category.icon} color="#fff" size={20} />
                           </div>
-                        )
-                      ) : (
-                        <div style={{ width: '32px', height: '32px', background: 'var(--input-bg)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                          <ImageIcon size={16} />
+                        ) : (
+                          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--card-bg)', border: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                            <ImageIcon size={20} />
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {category.image_url && <span style={{ fontSize: '0.7rem', background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', padding: '2px 6px', borderRadius: '4px' }}>Carrusel</span>}
+                          {category.promo_image_url && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '2px 6px', borderRadius: '4px' }}>Promo</span>}
                         </div>
-                      )}
+                      </div>
                     </td>
                     <td style={{ padding: '16px', fontWeight: 500, color: 'var(--text-color)' }}>{category.name}</td>
                     <td style={{ padding: '16px' }}>
@@ -345,7 +366,7 @@ export default function AdminCategories() {
       {/* Modal */}
       {isModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(8px)', padding: '16px' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', position: 'relative', overflowX: 'hidden' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '750px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', position: 'relative', overflowX: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-50px', left: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%)', filter: 'blur(20px)', zIndex: 0 }}></div>
             
             <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
@@ -364,20 +385,26 @@ export default function AdminCategories() {
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Slug (Opcional, se autogenera si está vacío)</label>
                 <input type="text" value={formData.slug} onChange={e => setFormData({...formData, slug: e.target.value})} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', outline: 'none' }} />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Imagen o Ícono de Categoría</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 100%' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Ícono Vectorial (Menú Principal)</label>
+                  <IconPicker 
+                    value={formData.icon} 
+                    onChange={(val) => setFormData({...formData, icon: val})} 
+                  />
+                </div>
+                <div style={{ flex: '1 1 200px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Imagen Carrusel (Burbuja PNG)</label>
                   <ImageUploader 
-                    currentImageUrl={formData.image_url?.includes('/') || formData.image_url?.includes('.') ? formData.image_url : undefined}
+                    currentImageUrl={formData.image_url}
                     onUploadSuccess={(url) => setFormData({...formData, image_url: url})}
                   />
-                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', position: 'relative' }}>
-                    <span style={{ background: 'var(--card-bg)', padding: '0 10px', position: 'relative', zIndex: 1 }}>O selecciona un ícono vectorial:</span>
-                    <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid var(--card-border)', zIndex: 0 }}></div>
-                  </div>
-                  <IconPicker 
-                    value={formData.image_url} 
-                    onChange={(val) => setFormData({...formData, image_url: val})} 
+                </div>
+                <div style={{ flex: '1 1 200px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Banner Promo (Mega Menú)</label>
+                  <ImageUploader 
+                    currentImageUrl={formData.promo_image_url}
+                    onUploadSuccess={(url) => setFormData({...formData, promo_image_url: url})}
                   />
                 </div>
               </div>
@@ -388,7 +415,7 @@ export default function AdminCategories() {
               </div>
               
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 200px' }}>
+                <div style={{ flex: '1 1 100%' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Categoría Padre (ID)</label>
                   <SearchableSelect
                     options={[
@@ -403,18 +430,29 @@ export default function AdminCategories() {
                     placeholder="Buscar categoría padre..."
                   />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, marginTop: '24px' }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
-                    <input type="checkbox" className="toggle-checkbox" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} />
-                    <span style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>Activo</span>
-                  </label>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, marginTop: '24px' }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }} title="Protege la categoría y la marca para ser usada en el armado de PCs">
-                    <input type="checkbox" className="toggle-checkbox" checked={formData.is_for_configurator} onChange={e => setFormData({...formData, is_for_configurator: e.target.checked})} />
-                    <span style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>Configurador PC</span>
-                  </label>
-                </div>
+              </div>
+
+              {/* Toggles Group */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
+                  <input type="checkbox" className="toggle-checkbox" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} />
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>Activo</span>
+                </label>
+                
+                <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }} title="Aparecerá en el Carrusel del Inicio">
+                  <input type="checkbox" className="toggle-checkbox" checked={formData.is_featured} onChange={e => setFormData({...formData, is_featured: e.target.checked})} />
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>Destacada (Home)</span>
+                </label>
+                
+                <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
+                  <input type="checkbox" className="toggle-checkbox" checked={formData.show_in_menu} onChange={e => setFormData({...formData, show_in_menu: e.target.checked})} />
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>Mostrar en Menú</span>
+                </label>
+
+                <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }} title="Protege la categoría para ser usada en el armado de PCs">
+                  <input type="checkbox" className="toggle-checkbox" checked={formData.is_for_configurator} onChange={e => setFormData({...formData, is_for_configurator: e.target.checked})} />
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>Configurador PC</span>
+                </label>
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Descripción</label>

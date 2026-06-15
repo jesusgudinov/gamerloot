@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/storefront/Navbar';
+import Footer from '@/components/storefront/Footer';
 import ProductCard from '@/components/storefront/ProductCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -406,6 +407,7 @@ function CatalogContent() {
           100% { opacity: 0.6; }
         }
       `}} />
+      <Footer />
     </div>
   );
 }

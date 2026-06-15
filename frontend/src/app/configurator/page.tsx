@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Navbar from '@/components/storefront/Navbar';
+import Footer from '@/components/storefront/Footer';
 import ShareLootModal from '@/components/storefront/ShareLootModal';
 import { Layers, Settings, Image as ImageIcon, Truck, CheckCircle2, ChevronRight, X, Heart, ShoppingCart, Filter, Info, ChevronDown, Check, Zap, Cpu, MemoryStick, HardDrive, Fan, ShieldCheck, Gamepad2, AlertCircle, RefreshCw, Smartphone, Monitor, Ban, Share2, Download, Trash2 } from 'lucide-react';
 import html2canvas from 'html2canvas';

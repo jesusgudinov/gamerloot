@@ -141,7 +141,8 @@ async def get_product_by_id(id: int, db: AsyncSession = Depends(get_db)):
         selectinload(Product.brand_relation),
         selectinload(Product.marketing_tags_relation),
         selectinload(Product.attribute_values),
-        selectinload(Product.inventory_stocks).selectinload(InventoryStock.warehouse)
+        selectinload(Product.inventory_stocks).selectinload(InventoryStock.warehouse),
+        selectinload(Product.active_campaign)
     ).where(Product.id == id)
     
     result = await db.execute(query)
@@ -158,7 +159,8 @@ async def get_product(slug: str, db: AsyncSession = Depends(get_db)):
         selectinload(Product.brand_relation),
         selectinload(Product.marketing_tags_relation),
         selectinload(Product.attribute_values),
-        selectinload(Product.inventory_stocks).selectinload(InventoryStock.warehouse)
+        selectinload(Product.inventory_stocks).selectinload(InventoryStock.warehouse),
+        selectinload(Product.active_campaign)
     ).where(Product.slug == slug)
     
     result = await db.execute(query)
@@ -211,7 +213,8 @@ async def create_product(product_in: ProductCreate, db: AsyncSession = Depends(g
         selectinload(Product.brand_relation),
         selectinload(Product.marketing_tags_relation),
         selectinload(Product.attribute_values),
-        selectinload(Product.inventory_stocks).selectinload(InventoryStock.warehouse)
+        selectinload(Product.inventory_stocks).selectinload(InventoryStock.warehouse),
+        selectinload(Product.active_campaign)
     ).where(Product.id == new_product.id)
     res = await db.execute(query)
     return res.scalars().first()
@@ -260,7 +263,8 @@ async def update_product(product_id: int, product_in: ProductUpdate, db: AsyncSe
         selectinload(Product.brand_relation),
         selectinload(Product.marketing_tags_relation),
         selectinload(Product.attribute_values),
-        selectinload(Product.inventory_stocks).selectinload(InventoryStock.warehouse)
+        selectinload(Product.inventory_stocks).selectinload(InventoryStock.warehouse),
+        selectinload(Product.active_campaign)
     ).where(Product.id == product.id)
     full_res = await db.execute(full_query)
     return full_res.scalars().first()

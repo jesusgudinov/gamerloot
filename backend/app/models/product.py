@@ -62,9 +62,13 @@ class Category(Base):
     description = Column(Text)
     
     parent_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
-    image_url = Column(String, nullable=True)
+    icon = Column(String, nullable=True) # Ícono vectorial de Lucide
+    image_url = Column(String, nullable=True) # Imagen para carrusel
+    promo_image_url = Column(String, nullable=True) # Imagen promocional para Mega Menú
     is_active = Column(Boolean, default=True)
+    is_featured = Column(Boolean, default=False)
     is_for_configurator = Column(Boolean, default=False)
+    show_in_menu = Column(Boolean, default=True)
     
     # Nuevo campo: Plantilla de atributos para la categoría
     attribute_schema = Column(JSON, nullable=True)

@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Navbar from '@/components/storefront/Navbar';
 import ProfileSidebar from '@/components/storefront/profile/ProfileSidebar';
+import Footer from '@/components/storefront/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -52,6 +53,7 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
           }
         }
       `}} />
+      <Footer />
     </div>
   );
 }
