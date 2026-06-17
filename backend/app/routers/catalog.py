@@ -19,6 +19,15 @@ async def get_categories(
         query = query.where(Category.name.ilike(f"%{search}%"))
     result = await db.execute(query.order_by(Category.name))
     categories = result.scalars().all()
+    
+    from sqlalchemy import func
+    from app.models.product import Product
+    count_res = await db.execute(select(Product.category_id, func.count(Product.id)).where(Product.category_id.isnot(None)).group_by(Product.category_id))
+    counts = dict(count_res.all())
+    
+    for c in categories:
+        c.product_count = counts.get(c.id, 0)
+        
     return categories
 
 @router.post("/categories", response_model=CategoryResponse, dependencies=[Depends(require_permissions(["manage_catalog"]))])

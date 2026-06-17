@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Heart, BarChart2, Star, Check } from 'lucide-react';
+import { ShoppingCart, Heart, BarChart2, Star, Check, Truck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 interface Product {
@@ -20,7 +20,7 @@ interface Product {
 
 import { getImageUrl } from '@/utils/imageUrl';
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product, viewMode = 'grid', eta }: { product: Product, viewMode?: 'grid' | 'list', eta?: string | null }) {
   const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
   const [added, setAdded] = useState(false);
@@ -59,7 +59,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <Link href={`/${product.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-      <div className="product-card group relative flex flex-col justify-between" style={{
+      <div className={`product-card group relative flex justify-between ${viewMode === 'list' ? 'list-view' : 'flex-col'}`} style={{
         position: 'relative',
         background: 'rgba(255, 255, 255, 0.02)',
         borderRadius: '16px',
@@ -69,7 +69,7 @@ export default function ProductCard({ product }: { product: Product }) {
         transition: 'all 0.3s ease',
         height: '100%',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: viewMode === 'list' ? 'row' : 'column'
       }}>
         {/* Badges */}
         <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10 }}>
@@ -85,30 +85,30 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
         </div>
 
-        {/* Hover Actions (Favorites / Compare) */}
-        <div className="product-actions" style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10, opacity: 0, transform: 'translateX(10px)', transition: 'all 0.3s ease' }}>
-          <button 
-            onClick={(e) => handleAction(e, 'Favoritos')}
-            style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}
-            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(236, 72, 153, 0.2)'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}
-            title="Agregar a Favoritos"
-          >
-            <Heart size={18} />
-          </button>
-          <button 
-            onClick={(e) => handleAction(e, 'Comparar')}
-            style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}
-            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.2)'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}
-            title="Comparar Producto"
-          >
-            <BarChart2 size={18} />
-          </button>
-        </div>
-
+        {viewMode === 'grid' && (
+          <div className="product-actions" style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10, opacity: 0, transform: 'translateX(10px)', transition: 'all 0.3s ease' }}>
+            <button 
+              onClick={(e) => handleAction(e, 'Favoritos')}
+              style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}
+              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(236, 72, 153, 0.2)'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}
+              title="Agregar a Favoritos"
+            >
+              <Heart size={18} />
+            </button>
+            <button 
+              onClick={(e) => handleAction(e, 'Comparar')}
+              style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(4px)' }}
+              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.2)'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}
+              title="Comparar Producto"
+            >
+              <BarChart2 size={18} />
+            </button>
+          </div>
+        )}
         {/* Image */}
-        <div style={{ width: '100%', height: '220px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ width: viewMode === 'list' ? '200px' : '100%', minWidth: viewMode === 'list' ? '200px' : 'auto', height: viewMode === 'list' ? '100%' : '220px', minHeight: viewMode === 'list' ? '200px' : 'auto', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderBottom: viewMode === 'list' ? 'none' : '1px solid rgba(255,255,255,0.05)', borderRight: viewMode === 'list' ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
           {product.main_image_url ? (
             <img 
               src={getImageUrl(product.main_image_url)} 
@@ -158,78 +158,150 @@ export default function ProductCard({ product }: { product: Product }) {
             )}
           </div>
 
-          {/* Add to Cart Button */}
-          {(!product.inventory_stocks || !product.inventory_stocks.some(stock => stock.quantity > 0)) ? (
-            <button 
-              disabled
-              style={{
-                marginTop: '16px',
-                width: '100%',
-                padding: '10px',
-                borderRadius: '8px',
-                background: 'var(--card-border)',
-                color: 'var(--text-muted)',
-                border: 'none',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'not-allowed'
-              }}
-            >
-              Agotado
-            </button>
-          ) : (
-            <button 
-              onClick={handleAddToCart}
-              className={`cart-btn ${isAdding ? 'adding' : ''} ${added ? 'added' : ''}`}
-              style={{
-                marginTop: '16px',
-                width: '100%',
-                padding: '10px',
-                borderRadius: '10px',
-                background: added ? 'rgba(16, 185, 129, 0.15)' : 'rgba(139, 92, 246, 0.1)',
-                color: added ? '#10b981' : '#8b5cf6',
-                border: added ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(139, 92, 246, 0.2)',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                cursor: isAdding ? 'default' : 'pointer',
-                transition: 'all 0.3s ease',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
-              <span className="btn-text" style={{ transition: 'opacity 0.2s', opacity: isAdding ? 0 : 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {added ? (
-                  <><Check size={18} /> ¡Agregado!</>
-                ) : (
-                  <><ShoppingCart size={18} /> Agregar al carrito</>
-                )}
-              </span>
+          {/* Bottom Area: ETA + Action Buttons */}
+          <div style={{ 
+            display: 'flex', 
+            marginTop: '16px', 
+            gap: '12px', 
+            alignItems: 'center', 
+            flexWrap: 'wrap',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            paddingTop: '16px'
+          }}>
+            
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', flex: '1 1 250px' }}>
+              {(!product.inventory_stocks || !product.inventory_stocks.some(stock => stock.quantity > 0)) ? (
+                <button 
+                  disabled
+                  style={{
+                    flex: 1,
+                    minWidth: '85px',
+                    padding: '8px',
+                    borderRadius: '10px',
+                    background: 'var(--card-border)',
+                    color: 'var(--text-muted)',
+                    border: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'not-allowed'
+                  }}
+                >
+                  Agotado
+                </button>
+              ) : (
+                <button 
+                  onClick={handleAddToCart}
+                  className={`cart-btn ${isAdding ? 'adding' : ''} ${added ? 'added' : ''}`}
+                  style={{
+                    flex: 1,
+                    minWidth: '85px',
+                    padding: '8px',
+                    borderRadius: '10px',
+                    background: added ? 'rgba(16, 185, 129, 0.15)' : 'rgba(139, 92, 246, 0.1)',
+                    color: added ? '#10b981' : '#8b5cf6',
+                    border: added ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(139, 92, 246, 0.2)',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: isAdding ? 'default' : 'pointer',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <span className="btn-text" style={{ transition: 'opacity 0.2s', opacity: isAdding ? 0 : 1, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {added ? (
+                      <><Check size={16} /> ¡Agregado!</>
+                    ) : (
+                      <><ShoppingCart size={16} /> Comprar</>
+                    )}
+                  </span>
 
-              {/* Animation Element */}
-              {isAdding && (
-                <div className="cart-animation-wrapper" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ShoppingCart size={20} className="animated-cart" color={added ? "#fff" : "var(--primary)"} />
-                  <div className="animated-item" style={{ width: '8px', height: '8px', background: 'var(--foreground)', borderRadius: '50%', position: 'absolute' }}></div>
-                </div>
+                  {/* Animation Element */}
+                  {isAdding && (
+                    <div className="cart-animation-wrapper" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ShoppingCart size={16} className="animated-cart" color={added ? "#fff" : "var(--primary)"} />
+                      <div className="animated-item" style={{ width: '6px', height: '6px', background: 'var(--foreground)', borderRadius: '50%', position: 'absolute' }}></div>
+                    </div>
+                  )}
+                </button>
               )}
-            </button>
-          )}
+
+              {viewMode === 'list' && (
+                <>
+                  <button 
+                    onClick={(e) => handleAction(e, 'Favoritos')}
+                    style={{ flex: 1, minWidth: '85px', padding: '8px', borderRadius: '10px', background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: '1px solid rgba(236, 72, 153, 0.2)', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(236, 72, 153, 0.2)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <Heart size={16} /> Favoritos
+                  </button>
+                  
+                  <button 
+                    onClick={(e) => handleAction(e, 'Comparar')}
+                    style={{ flex: 1, minWidth: '85px', padding: '8px', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: '1px solid rgba(6, 182, 212, 0.2)', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.2)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(6, 182, 212, 0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <BarChart2 size={16} /> Comparar
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* ETA Info Spacer / Box */}
+            <div style={{ 
+              flex: '1 1 120px', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '6px',
+              background: 'linear-gradient(to right, rgba(139, 92, 246, 0.08), transparent)',
+              borderLeft: '3px solid var(--primary)',
+              padding: '8px 12px',
+              borderRadius: '0 8px 8px 0',
+              borderTop: '1px solid rgba(255,255,255,0.03)',
+              borderRight: '1px solid rgba(255,255,255,0.03)',
+              borderBottom: '1px solid rgba(255,255,255,0.03)',
+              backdropFilter: 'blur(8px)',
+              visibility: (product.inventory_stocks && product.inventory_stocks.some(stock => stock.quantity > 0)) ? 'visible' : 'hidden'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div style={{ background: 'rgba(139, 92, 246, 0.15)', padding: '4px', borderRadius: '6px' }}>
+                  <Truck size={12} color="var(--primary)" />
+                </div>
+                Envío Estimado
+              </div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0', lineHeight: 1.3 }}>
+                {eta ? (
+                  <span className="text-gradient" style={{ fontWeight: 800 }}>{eta}</span>
+                ) : (
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'block' }}>Agrega tu CP para calcular</span>
+                )}
+              </div>
+            </div>
+            
+          </div>
         </div>
 
         {/* Scoped CSS for the card hover and animation */}
         <style dangerouslySetInnerHTML={{__html: `
           .product-card {
             min-width: 240px;
-            max-width: 280px;
+            max-width: ${viewMode === 'list' ? 'none' : '280px'};
+            width: ${viewMode === 'list' ? '100%' : 'auto'};
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
           }
           .product-card:hover {
             border-color: var(--primary);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
             transform: translateY(-5px);
           }
           .product-card:hover .product-actions {
@@ -248,7 +320,7 @@ export default function ProductCard({ product }: { product: Product }) {
           
           @media (max-width: 768px) {
             .product-card {
-              min-width: calc(50vw - 35px); /* 50% de la pantalla menos el padding y gap */
+              min-width: ${viewMode === 'list' ? '100%' : 'calc(50vw - 35px)'};
               max-width: none;
             }
           }

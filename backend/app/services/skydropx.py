@@ -8,6 +8,55 @@ class SkydropxService:
         # Skydropx V2 API URL
         self.base_url = "https://api.skydropx.com/v2"
 
+    async def get_transit_time_cached(self, origin_zip: str, destination_zip: str, extra_days: int = 1) -> dict:
+        """
+        Consulta y cachea los días de tránsito usando Redis.
+        Suma `extra_days` (por defecto 1, para PCs puede ser 3) al resultado base de Skydropx.
+        """
+        import json
+        from app.core.redis_client import redis_client
+        
+        cache_key = f"eta:{origin_zip}:{destination_zip}"
+        
+        # Try Cache first
+        if redis_client:
+            try:
+                cached = await redis_client.get(cache_key)
+                if cached:
+                    return {"days": int(cached) + extra_days}
+            except Exception as e:
+                print(f"Redis error: {e}")
+
+        # Si no hay cache, llamamos a Skydropx con un paquete dummy
+        dummy_parcel = {
+            "weight": 1.0,
+            "distance_unit": "CM",
+            "mass_unit": "KG",
+            "length": 10.0,
+            "width": 10.0,
+            "height": 10.0
+        }
+        
+        rates = await self.get_rates_v2(origin_zip, destination_zip, dummy_parcel)
+        
+        if not rates:
+            base_days = 3
+        else:
+            try:
+                # Tomar la paquetería más rápida/barata
+                base_days = min([int(r.get("days", 3)) for r in rates if r.get("days") is not None])
+            except Exception:
+                base_days = 3
+
+        # Guardar en Redis (30 días de TTL)
+        if redis_client:
+            try:
+                await redis_client.setex(cache_key, 60*60*24*30, str(base_days))
+            except Exception as e:
+                print(f"Redis error setting cache: {e}")
+
+        return {"days": base_days + extra_days}
+
     async def get_rates_v2(self, origin_zip: str, destination_zip: str, parcel: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Llama a la API v2 de Skydropx para obtener tarifas.

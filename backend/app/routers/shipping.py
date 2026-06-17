@@ -41,6 +41,8 @@ async def quote_shipping(
 
 from pydantic import BaseModel
 
+
+
 class CreateShipmentRequest(BaseModel):
     order_id: int
 

@@ -15,6 +15,7 @@ interface User {
   role: string | null;
   permissions: string[];
   is_superuser: boolean;
+  default_zip_code?: string | null;
 }
 
 interface AuthContextType {

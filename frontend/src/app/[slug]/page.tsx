@@ -166,18 +166,18 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px' }}>
         
         {/* Breadcrumbs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '30px' }}>
-          <Link href="/" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Inicio</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '30px', flexWrap: 'wrap' }}>
+          <Link href="/" className="breadcrumb-link">Inicio</Link>
           <ChevronRight size={14} />
-          <span>Catálogo</span>
+          <Link href="/catalog" className="breadcrumb-link">Catálogo</Link>
           <ChevronRight size={14} />
           {product.category && (
             <>
-              <Link href={`/catalog?category=${product.category.id}`} style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>{product.category.name}</Link>
+              <Link href={`/catalog?category=${product.category.id}`} className="breadcrumb-link">{product.category.name}</Link>
               <ChevronRight size={14} />
             </>
           )}
-          <span style={{ color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>{product.name}</span>
+          <span style={{ color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px', fontWeight: 500 }}>{product.name}</span>
         </div>
 
         {/* 2-Column Product Section */}
@@ -527,6 +527,24 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scroll::-webkit-scrollbar { display: none; }
         
+        .breadcrumb-link {
+          color: var(--text-muted);
+          text-decoration: none;
+          padding: 4px 12px;
+          border-radius: 16px;
+          border: 1px solid transparent;
+          background: transparent;
+          transition: all 0.2s ease;
+          font-weight: 500;
+        }
+        
+        .breadcrumb-link:hover {
+          color: var(--primary);
+          background: color-mix(in srgb, var(--primary) 15%, transparent);
+          border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+          font-weight: 600;
+        }
+
         .cart-btn:hover:not(.adding):not(.added) {
           transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4) !important;

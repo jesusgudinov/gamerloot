@@ -65,6 +65,7 @@ class Category(Base):
     icon = Column(String, nullable=True) # Ícono vectorial de Lucide
     image_url = Column(String, nullable=True) # Imagen para carrusel
     promo_image_url = Column(String, nullable=True) # Imagen promocional para Mega Menú
+    promo_link = Column(String, nullable=True) # Enlace para la imagen promocional
     is_active = Column(Boolean, default=True)
     is_featured = Column(Boolean, default=False)
     is_for_configurator = Column(Boolean, default=False)
@@ -155,9 +156,10 @@ class Product(Base):
     status = Column(String, default="DRAFT") # PUBLISHED, DRAFT, ARCHIVED
     is_featured = Column(Boolean, default=False)
     
-    # Reseñas (Reviews)
+    # Reseñas (Reviews) y Ventas
     rating = Column(Float, default=0.0)
     reviews_count = Column(Integer, default=0)
+    sales_count = Column(Integer, default=0)
     
     category_id = Column(Integer, ForeignKey("categories.id"))
     category = relationship("Category", back_populates="products")

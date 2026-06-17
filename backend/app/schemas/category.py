@@ -9,6 +9,7 @@ class CategoryBase(BaseModel):
     icon: Optional[str] = None
     image_url: Optional[str] = None
     promo_image_url: Optional[str] = None
+    promo_link: Optional[str] = None
     is_active: bool = True
     is_featured: bool = False
     is_for_configurator: bool = False
@@ -26,6 +27,7 @@ class CategoryUpdate(BaseModel):
     icon: Optional[str] = None
     image_url: Optional[str] = None
     promo_image_url: Optional[str] = None
+    promo_link: Optional[str] = None
     is_active: Optional[bool] = None
     is_featured: Optional[bool] = None
     is_for_configurator: Optional[bool] = None
@@ -33,6 +35,7 @@ class CategoryUpdate(BaseModel):
 
 class CategoryResponse(CategoryBase):
     id: int
+    product_count: Optional[int] = 0
 
     class Config:
         from_attributes = True

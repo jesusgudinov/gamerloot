@@ -13,6 +13,7 @@ interface StoreCategory {
   icon: string | null;
   image_url: string | null;
   promo_image_url: string | null;
+  promo_link: string | null;
 }
 
 interface MegaMenuProps {
@@ -56,7 +57,17 @@ export default function MegaMenu({ activeCategory, subcategories, onMouseLeave, 
         <div style={{ flex: 1 }}>
           <h4 style={{ color: 'var(--foreground)', fontSize: '1.2rem', fontWeight: 800, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             {activeCategory.icon ? (
-              <div style={{ color: 'var(--primary)' }}>
+              <div style={{ 
+                color: '#c4b5fd', 
+                background: 'rgba(139, 92, 246, 0.1)', 
+                padding: '8px', 
+                borderRadius: '10px', 
+                flexShrink: 0, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                border: '1px solid rgba(139, 92, 246, 0.2)'
+              }}>
                 <DynamicIcon name={activeCategory.icon} size={24} />
               </div>
             ) : (
@@ -90,7 +101,7 @@ export default function MegaMenu({ activeCategory, subcategories, onMouseLeave, 
                     e.currentTarget.style.transform = 'translateX(0)'; 
                   }}
                 >
-                  <ChevronRight size={16} color="var(--primary)" style={{ opacity: 0.5 }} /> 
+                  <ChevronRight size={16} color="var(--primary)" strokeWidth={3} style={{ opacity: 0.7, flexShrink: 0 }} /> 
                   {sub.name}
                 </Link>
               ))}
@@ -103,7 +114,7 @@ export default function MegaMenu({ activeCategory, subcategories, onMouseLeave, 
         {/* Featured Card (Promo Image) */}
         {activeCategory.promo_image_url && (
           <div style={{ width: '350px', flexShrink: 0 }}>
-            <Link href={`/catalog?category=${activeCategory.slug}`} style={{ textDecoration: 'none' }}>
+            <Link href={activeCategory.promo_link || `/catalog?category=${activeCategory.slug}`} style={{ textDecoration: 'none' }}>
               <div className="hover-card" style={{ 
                 height: '100%', 
                 minHeight: '250px',
@@ -119,12 +130,26 @@ export default function MegaMenu({ activeCategory, subcategories, onMouseLeave, 
                   background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)',
                   padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end'
                 }}>
-                  <span style={{ color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '2px', marginBottom: '8px' }}>
+                  <span style={{ 
+                    background: 'rgba(139, 92, 246, 0.2)',
+                    color: '#ddd6fe',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    fontWeight: 800, 
+                    textTransform: 'uppercase', 
+                    fontSize: '0.7rem', 
+                    letterSpacing: '1px', 
+                    marginBottom: '12px',
+                    display: 'inline-block',
+                    width: 'fit-content',
+                    backdropFilter: 'blur(4px)'
+                  }}>
                     Todo en {activeCategory.name}
                   </span>
                   <h3 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     Ver Catálogo
-                    <Zap size={20} color="var(--primary)" />
+                    <Zap size={20} color="#a855f7" fill="#8b5cf6" style={{ filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.8))' }} />
                   </h3>
                 </div>
               </div>

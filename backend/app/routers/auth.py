@@ -133,7 +133,8 @@ async def get_my_profile(request: Request, context: str = "client", db: AsyncSes
         from sqlalchemy.orm import joinedload
         from app.models.role import Role, RolePermission
         stmt = select(User).options(
-            joinedload(User.role).joinedload(Role.role_permissions).joinedload(RolePermission.permission)
+            joinedload(User.role).joinedload(Role.role_permissions).joinedload(RolePermission.permission),
+            joinedload(User.addresses)
         ).where(User.id == int(user_id))
         
         result = await db.execute(stmt)
@@ -156,6 +157,9 @@ async def get_my_profile(request: Request, context: str = "client", db: AsyncSes
         role_name = current_user.role.name
         permissions = [rp.permission.name for rp in current_user.role.role_permissions]
         
+    default_address = next((a for a in current_user.addresses if a.is_default), None) if current_user.addresses else None
+    default_zip_code = default_address.zip_code if default_address else None
+
     return {
         "id": current_user.id,
         "email": current_user.email,
@@ -168,7 +172,8 @@ async def get_my_profile(request: Request, context: str = "client", db: AsyncSes
         "is_superuser": current_user.is_superuser,
         "mfa_enabled": current_user.mfa_enabled,
         "role": role_name,
-        "permissions": permissions
+        "permissions": permissions,
+        "default_zip_code": default_zip_code
     }
 
 from app.schemas.user import UserProfileUpdate, UserPasswordUpdate

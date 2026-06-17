@@ -45,8 +45,12 @@ async def get_products(
     tag: Optional[str] = None,
     status: Optional[str] = None,
     category_id: Optional[int] = None,
+    attributes: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
     db: AsyncSession = Depends(get_db)
 ):
+    import json
     skip = (page - 1) * size
     
     # Construir condiciones base
@@ -85,6 +89,43 @@ async def get_products(
         conditions.append(Product.inventory_stocks.any(
             InventoryStock.warehouse.has(Warehouse.provider_name == provider)
         ))
+        
+    if min_price is not None:
+        conditions.append(func.coalesce(Product.discount_price, Product.base_price) >= min_price)
+    if max_price is not None:
+        conditions.append(func.coalesce(Product.discount_price, Product.base_price) <= max_price)
+
+    # Filtros Dinámicos de Atributos
+    if attributes:
+        try:
+            attrs_dict = json.loads(attributes)
+            for attr_name, values in attrs_dict.items():
+                if not values:
+                    continue
+                if attr_name == "Marca":
+                    from app.models.product import Brand
+                    conditions.append(or_(
+                        Product.brand_relation.has(Brand.name.in_(values)),
+                        Product.brand.in_(values)
+                    ))
+                elif attr_name == "Existencia":
+                    subq = select(func.coalesce(func.sum(InventoryStock.quantity), 0)).where(InventoryStock.product_id == Product.id).scalar_subquery()
+                    stock_conds = []
+                    if "En stock" in values:
+                        stock_conds.append((subq - Product.reserved_quantity) > 0)
+                    if "Agotado" in values:
+                        stock_conds.append((subq - Product.reserved_quantity) <= 0)
+                    if stock_conds:
+                        conditions.append(or_(*stock_conds))
+                else:
+                    conditions.append(
+                        Product.attribute_values.any(
+                            ProductAttributeValue.attribute.has(ProductAttribute.name == attr_name) & 
+                            ProductAttributeValue.value.in_(values)
+                        )
+                    )
+        except json.JSONDecodeError:
+            pass
 
     # Calcular total de productos con filtros
     total_query = select(func.count()).select_from(Product)
@@ -115,6 +156,12 @@ async def get_products(
         query = query.order_by(asc(Product.base_price))
     elif sort_by == "price_desc":
         query = query.order_by(desc(Product.base_price))
+    elif sort_by == "newest":
+        query = query.order_by(desc(Product.id))
+    elif sort_by == "best_selling":
+        query = query.order_by(desc(Product.sales_count))
+    elif sort_by == "relevance":
+        query = query.order_by(desc(Product.is_featured), desc(Product.id))
     else:
         query = query.order_by(desc(Product.id))
         

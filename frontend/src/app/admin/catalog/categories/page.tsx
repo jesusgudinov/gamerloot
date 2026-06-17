@@ -17,6 +17,7 @@ interface Category {
   icon?: string;
   image_url?: string;
   promo_image_url?: string;
+  promo_link?: string;
   is_active: boolean;
   is_featured: boolean;
   is_for_configurator: boolean;
@@ -42,6 +43,7 @@ export default function AdminCategories() {
     icon: '',
     image_url: '',
     promo_image_url: '',
+    promo_link: '',
     is_active: true,
     is_featured: false,
     is_for_configurator: false,
@@ -102,6 +104,7 @@ export default function AdminCategories() {
         icon: category.icon || '',
         image_url: category.image_url || '',
         promo_image_url: category.promo_image_url || '',
+        promo_link: category.promo_link || '',
         is_active: category.is_active,
         is_featured: category.is_featured || false,
         is_for_configurator: category.is_for_configurator,
@@ -118,6 +121,7 @@ export default function AdminCategories() {
         icon: '',
         image_url: '',
         promo_image_url: '',
+        promo_link: '',
         is_active: true,
         is_featured: false,
         is_for_configurator: false,
@@ -164,6 +168,7 @@ export default function AdminCategories() {
         icon: formData.icon || null,
         image_url: formData.image_url || null,
         promo_image_url: formData.promo_image_url || null,
+        promo_link: formData.promo_link || null,
         is_active: formData.is_active,
         is_featured: formData.is_featured,
         is_for_configurator: formData.is_for_configurator,
@@ -400,12 +405,18 @@ export default function AdminCategories() {
                     onUploadSuccess={(url) => setFormData({...formData, image_url: url})}
                   />
                 </div>
-                <div style={{ flex: '1 1 200px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Banner Promo (Mega Menú)</label>
-                  <ImageUploader 
-                    currentImageUrl={formData.promo_image_url}
-                    onUploadSuccess={(url) => setFormData({...formData, promo_image_url: url})}
-                  />
+                <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Banner Promo (Mega Menú)</label>
+                    <ImageUploader 
+                      currentImageUrl={formData.promo_image_url}
+                      onUploadSuccess={(url) => setFormData({...formData, promo_image_url: url})}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Link de Banner (Opcional)</label>
+                    <input type="text" placeholder="/catalog?brand=logitech" value={formData.promo_link || ''} onChange={e => setFormData({...formData, promo_link: e.target.value})} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--card-border)', background: 'var(--input-bg)', color: 'var(--text-color)', outline: 'none', fontSize: '0.85rem' }} />
+                  </div>
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

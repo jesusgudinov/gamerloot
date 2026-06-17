@@ -8,6 +8,7 @@ import { ShoppingCart, Search, X, User, Heart, BarChart2, Zap, Moon, Sun, Menu, 
 import { getImageUrl } from '@/utils/imageUrl';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import DynamicIcon from '@/components/ui/DynamicIcon';
 import MegaMenu from './navigation/MegaMenu';
 import MobileMenuDrawer from './navigation/MobileMenuDrawer';
 
@@ -19,6 +20,7 @@ interface StoreCategory {
   icon: string | null;
   image_url: string | null;
   promo_image_url: string | null;
+  promo_link: string | null;
 }
 
 function ShippingLocationWidget({ user }: { user: any }) {
@@ -297,6 +299,13 @@ export default function Navbar() {
           {/* Right Side (Actions & Cart) */}
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <div className="hide-on-mobile" style={{ display: 'flex', gap: '8px', alignItems: 'center', paddingRight: '16px', borderRight: '1px solid var(--card-border)' }}>
+              
+              <Link href="/configurator" style={{ textDecoration: 'none', marginRight: '8px' }}>
+                <div className="hover-card" style={{ background: 'linear-gradient(90deg, #8b5cf6, #a855f7)', padding: '10px 18px', borderRadius: '12px', color: '#fff', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '0.8rem', boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)' }}>
+                  <Zap size={14} /> Arma tu PC
+                </div>
+              </Link>
+
               {mounted && (
                 <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="icon-squircle icon-theme" title="Cambiar Tema">
                   {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -336,12 +345,6 @@ export default function Navbar() {
         {/* ========================================================= */}
         <div className="hide-on-mobile" style={{ padding: '0 40px', display: 'flex', alignItems: 'center', gap: '30px', position: 'relative' }}>
           
-          <Link href="/configurator" style={{ textDecoration: 'none' }}>
-            <div className="hover-card" style={{ background: 'linear-gradient(90deg, #8b5cf6, #a855f7)', padding: '12px 24px', color: '#fff', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '1px', textTransform: 'uppercase', fontSize: '0.85rem' }}>
-              <Zap size={16} /> Arma tu PC
-            </div>
-          </Link>
-
           <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
             {/* Scroll Arrows */}
             {showScrollArrows.left && (
@@ -355,10 +358,8 @@ export default function Navbar() {
 
             <div 
               style={{ 
-                display: 'flex', gap: '8px', height: '100%', 
-                overflowX: 'auto', scrollbarWidth: 'none', position: 'relative', flex: 1, 
-                maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)',
-                WebkitMaskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)'
+                display: 'flex', gap: '16px', height: '100%', 
+                overflowX: 'auto', scrollbarWidth: 'none', position: 'relative', flex: 1
               }}
               ref={scrollRef}
               onScroll={handleScroll}
@@ -384,12 +385,16 @@ export default function Navbar() {
                     color: activeMegaMenu?.id === cat.id ? 'var(--primary)' : 'var(--foreground)',
                     fontWeight: activeMegaMenu?.id === cat.id ? 800 : 600,
                     fontSize: '0.95rem',
-                    display: 'flex', alignItems: 'center', gap: '6px',
+                    display: 'flex', alignItems: 'center', gap: '8px',
                     borderBottom: activeMegaMenu?.id === cat.id ? '2px solid var(--primary)' : '2px solid transparent',
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  {cat.name} <ChevronDown size={14} style={{ transform: activeMegaMenu?.id === cat.id ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+                  {cat.icon && (
+                    <DynamicIcon name={cat.icon} size={16} />
+                  )}
+                  {cat.name} 
+                  <ChevronDown size={14} style={{ transform: activeMegaMenu?.id === cat.id ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', marginLeft: '4px' }} />
                 </div>
               ))}
             </div>
@@ -403,13 +408,7 @@ export default function Navbar() {
               </button>
             )}
           </div>
-
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '24px', flexShrink: 0 }}>
-            <Link href="/blog" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }} onMouseOver={e => e.currentTarget.style.color = 'var(--foreground)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-muted)'}>Blog</Link>
-            <Link href="/support" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }} onMouseOver={e => e.currentTarget.style.color = 'var(--foreground)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-muted)'}>Soporte</Link>
-          </div>
         </div>
-
         <div className="hide-on-mobile">
           {activeMegaMenu && activePointerX > 0 && (
             <>

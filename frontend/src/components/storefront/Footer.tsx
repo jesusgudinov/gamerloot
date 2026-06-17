@@ -78,10 +78,16 @@ export default function Footer() {
               Explorar
             </h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {['Arma tu PC', 'Lanzamientos', 'Ofertas Épicas', 'Tarjetas de Regalo', 'Nuestro Blog'].map((item, i) => (
+              {[
+                { name: 'Arma tu PC', href: '/configurator' },
+                { name: 'Lanzamientos', href: '#' },
+                { name: 'Ofertas Épicas', href: '#' },
+                { name: 'Tarjetas de Regalo', href: '#' },
+                { name: 'Nuestro Blog', href: '/blog' }
+              ].map((item, i) => (
                 <li key={i}>
-                  <Link href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.95rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseOver={(e) => { e.currentTarget.style.color = 'var(--foreground)'; e.currentTarget.style.transform = 'translateX(5px)'; }} onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.transform = 'translateX(0)'; }}>
-                    <ChevronRight size={14} color="var(--primary)" style={{ opacity: 0.5 }} /> {item}
+                  <Link href={item.href} style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.95rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseOver={(e) => { e.currentTarget.style.color = 'var(--foreground)'; e.currentTarget.style.transform = 'translateX(5px)'; }} onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.transform = 'translateX(0)'; }}>
+                    <ChevronRight size={14} color="var(--primary)" style={{ opacity: 0.5 }} /> {item.name}
                   </Link>
                 </li>
               ))}
@@ -95,10 +101,16 @@ export default function Footer() {
               Soporte Total
             </h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {['Rastrea tu Loot', 'Garantía de Hardware', 'Devoluciones', 'Centro de Ayuda', 'Políticas de Envío'].map((item, i) => (
+              {[
+                { name: 'Rastrea tu Loot', href: '#' },
+                { name: 'Garantía de Hardware', href: '#' },
+                { name: 'Devoluciones', href: '#' },
+                { name: 'Centro de Ayuda', href: '/support' },
+                { name: 'Políticas de Envío', href: '#' }
+              ].map((item, i) => (
                 <li key={i}>
-                  <Link href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.95rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseOver={(e) => { e.currentTarget.style.color = 'var(--foreground)'; e.currentTarget.style.transform = 'translateX(5px)'; }} onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.transform = 'translateX(0)'; }}>
-                    <ChevronRight size={14} color="var(--primary)" style={{ opacity: 0.5 }} /> {item}
+                  <Link href={item.href} style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.95rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseOver={(e) => { e.currentTarget.style.color = 'var(--foreground)'; e.currentTarget.style.transform = 'translateX(5px)'; }} onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.transform = 'translateX(0)'; }}>
+                    <ChevronRight size={14} color="var(--primary)" style={{ opacity: 0.5 }} /> {item.name}
                   </Link>
                 </li>
               ))}
