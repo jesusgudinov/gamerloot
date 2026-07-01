@@ -31,6 +31,27 @@ async def get_sales_stats(db: AsyncSession = Depends(get_db)):
     revenue_q = select(func.sum(Order.total)).where(Order.status.notin_(["Cancelado", "Pendiente", "Cotización"]))
     total_revenue = (await db.execute(revenue_q)).scalar() or 0.0
 
+    # Total Profit (Utilidad Bruta)
+    profit_q = select(
+        func.sum(OrderItem.total_price).label("total_revenue_items"),
+        func.sum(OrderItem.total_cost).label("total_cogs")
+    ).select_from(Order).join(OrderItem).where(Order.status.notin_(["Cancelado", "Pendiente", "Cotización"]))
+    
+    profit_res = await db.execute(profit_q)
+    profit_row = profit_res.one_or_none()
+    gross_profit = (profit_row.total_revenue_items or 0.0) - (profit_row.total_cogs or 0.0) if profit_row else 0.0
+
+    # Stripe Fees (3.6% + $3.00 MXN)
+    stripe_fee_q = select(
+        func.sum(Order.total * 0.036 + 3.00)
+    ).where(Order.status.notin_(["Cancelado", "Pendiente", "Cotización"]), Order.payment_method == "Stripe")
+    
+    stripe_res = await db.execute(stripe_fee_q)
+    stripe_fees = stripe_res.scalar() or 0.0
+    
+    # Utilidad Neta
+    total_profit = gross_profit - stripe_fees
+
     # Total orders count
     total_orders_q = select(func.count(Order.id))
     total_orders = (await db.execute(total_orders_q)).scalar() or 0
@@ -69,6 +90,7 @@ async def get_sales_stats(db: AsyncSession = Depends(get_db)):
 
     return {
         "total_revenue": total_revenue,
+        "total_profit": total_profit,
         "total_orders": total_orders,
         "pending_orders": pending_orders,
         "shipped_orders": shipped_orders,
@@ -118,7 +140,7 @@ async def get_my_order_by_folio(
     current_user: User = Depends(get_current_active_user)
 ):
     """Devuelve un pedido específico del usuario autenticado por folio"""
-    query = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).where(
+    query = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product), selectinload(Order.invoice)).where(
         Order.folio == folio,
         Order.user_id == current_user.id
     )
@@ -174,6 +196,18 @@ async def create_order(order_in: OrderCreate, db: AsyncSession = Depends(get_db)
     await db.refresh(new_order)
     
     for item in order_in.items:
+        # Obtener costo del proveedor actual (el más bajo disponible)
+        from app.models.inventory import InventoryStock
+        cost_stmt = select(func.min(InventoryStock.supplier_cost)).where(
+            InventoryStock.product_id == item.product_id,
+            InventoryStock.supplier_cost > 0
+        )
+        cost_res = await db.execute(cost_stmt)
+        min_cost = cost_res.scalar() or 0.0
+        
+        unit_cost = min_cost
+        total_cost = unit_cost * item.quantity
+
         new_item = OrderItem(
             order_id=new_order.id,
             product_id=item.product_id,
@@ -181,7 +215,9 @@ async def create_order(order_in: OrderCreate, db: AsyncSession = Depends(get_db)
             product_name=item.product_name,
             quantity=item.quantity,
             unit_price=item.unit_price,
-            total_price=item.total_price
+            total_price=item.total_price,
+            unit_cost=unit_cost,
+            total_cost=total_cost
         )
         db.add(new_item)
         

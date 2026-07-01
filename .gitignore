@@ -6,3 +6,8 @@ node_modules/
 .env
 *.log
 backend/uploads/
+backend/test_*.py
+backend/output*.txt
+backend/app.db
+patch_*.py
+skills-lock.json

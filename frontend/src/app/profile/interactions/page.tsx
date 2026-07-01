@@ -15,7 +15,7 @@ interface ProductBasicInfo {
 
 interface Review {
   id: number;
-  product_id: int;
+  product_id: number;
   rating: number;
   comment: string;
   status: string;

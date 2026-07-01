@@ -33,11 +33,23 @@ class Settings(BaseSettings):
     TECHSMART_USERNAME: str = ""
     TECHSMART_PASSWORD: str = ""
     
+    # Integraciones
+    # Stripe Config
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+
+    # Mienvio Config
+    MIENVIO_API_KEY: str = ""
+
     # Skydropx Config
     SKYDROPX_API_KEY: str = ""
-    SKYDROPX_API_SECRET: str = ""
-    SKYDROPX_API_URL: str = "https://pro.skydropx.com/api/v1"
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+    # SMTP Config
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 465
+    SMTP_USER: str = ""
+    SMTP_PASS: str = ""
+
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
 settings = Settings()

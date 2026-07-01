@@ -35,6 +35,7 @@ class User(Base):
     # Relaciones
     addresses = relationship("UserAddress", back_populates="user", cascade="all, delete-orphan")
     role = relationship("Role", back_populates="users")
+    billing_profile = relationship("BillingProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 class UserAddress(Base):
     __tablename__ = "user_addresses"
@@ -56,5 +57,22 @@ class UserAddress(Base):
     is_default = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="addresses")
+
+class BillingProfile(Base):
+    __tablename__ = "user_billing_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    
+    rfc = Column(String, nullable=False)
+    business_name = Column(String, nullable=False) # Razón Social
+    tax_regime = Column(String, nullable=False) # Régimen Fiscal
+    cfdi_use = Column(String, nullable=False) # Uso CFDI
+    zip_code = Column(String, nullable=False) # Código Postal Fiscal
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    user = relationship("User", back_populates="billing_profile")
 
 import app.models.role

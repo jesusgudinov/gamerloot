@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, Text, ForeignKey, JSON, Table, DateTime
 from sqlalchemy.orm import relationship
 from app.models.user import Base
+from app.models.marketing import Campaign
+from app.models.inventory import InventoryStock
 
 # Tabla de asociación muchos a muchos (Producto <-> Valor de Atributo)
 product_attribute_association = Table(
@@ -76,6 +78,9 @@ class Category(Base):
     
     # Palabras clave para auto-asignación por título (Motor Inferencia)
     keywords = Column(JSON, nullable=True)
+
+    # Clave de Producto o Servicio del SAT (Facturación / Logística)
+    sat_code = Column(String, nullable=True)
     
     parent = relationship("Category", remote_side=[id], back_populates="subcategories")
     subcategories = relationship("Category", back_populates="parent")

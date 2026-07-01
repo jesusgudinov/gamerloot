@@ -3,10 +3,15 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Truck, CheckCircle, CreditCard, Package, ShoppingCart, Tag } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Truck, CheckCircle, CreditCard, Package, ShoppingCart, Tag, Home, MapPin, Plus } from 'lucide-react';
+import AddressModal from '@/components/checkout/AddressModal';
+import StripeProvider from '@/components/checkout/StripeProvider';
+import PaymentForm from '@/components/checkout/PaymentForm';
+import { useAuth } from '@/context/AuthContext';
 
 export default function CheckoutPage() {
   const { items, finalTotal, cartTotal, couponCode, couponDiscount, clearCart } = useCart();
+  const { user } = useAuth();
   const router = useRouter();
 
   // Form State
@@ -15,17 +20,74 @@ export default function CheckoutPage() {
     name: '',
     email: '',
     phone: '',
-    address: '',
+    street: '',
+    exteriorNumber: '',
+    neighborhood: '',
     city: '',
     state: '',
     zip: '',
   });
+
+  const [userAddresses, setUserAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<number | 'new'>('new');
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.full_name || prev.name,
+        email: user.email || prev.email,
+        phone: user.phone_number || prev.phone
+      }));
+      fetchAddresses();
+    }
+  }, [user]);
+
+  const fetchAddresses = async () => {
+    if (!user) return;
+    setLoadingAddresses(true);
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/addresses/user/${user.id}`, {
+        credentials: 'include'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserAddresses(data);
+        if (data.length > 0) {
+          const defaultAddress = data.find((a: any) => a.is_default) || data[0];
+          setSelectedAddressId(defaultAddress.id);
+          populateFormWithAddress(defaultAddress);
+        }
+      }
+    } catch (e) {
+      console.error("Error fetching addresses", e);
+    }
+    setLoadingAddresses(false);
+  };
+
+  const populateFormWithAddress = (addr: any) => {
+    setFormData(prev => ({
+      ...prev,
+      street: addr.street || '',
+      exteriorNumber: addr.exterior_number || '',
+      neighborhood: addr.neighborhood || '',
+      city: addr.city || '',
+      state: addr.state || '',
+      zip: addr.zip_code || ''
+    }));
+  };
 
   const [shippingRates, setShippingRates] = useState<any[]>([]);
   const [selectedShipping, setSelectedShipping] = useState<any | null>(null);
   const [isQuoting, setIsQuoting] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<any | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'SPEI' | 'Stripe'>('Stripe');
+  const [savePaymentMethod, setSavePaymentMethod] = useState(false);
 
   // Redirigir si el carrito está vacío y no hemos terminado
   useEffect(() => {
@@ -47,6 +109,8 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           destination_zip: formData.zip,
+          destination_city: formData.city,
+          destination_state: formData.state,
           items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, weight: 1 }))
         })
       });
@@ -61,8 +125,32 @@ export default function CheckoutPage() {
     setIsQuoting(false);
   };
 
-  const handleStep1Submit = (e: React.FormEvent) => {
+  const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (selectedAddressId === 'new' && saveAddress && user) {
+      try {
+        await fetch(`http://localhost:8000/api/v1/addresses/${user.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            alias: 'Dirección de envío',
+            icon_name: 'Home',
+            street: formData.street,
+            exterior_number: formData.exteriorNumber,
+            neighborhood: formData.neighborhood,
+            city: formData.city,
+            state: formData.state,
+            zip_code: formData.zip,
+            is_default: userAddresses.length === 0
+          })
+        });
+      } catch (err) {
+        console.error("Error saving address", err);
+      }
+    }
+
     if (formData.zip.length === 5) {
       quoteShipping();
     }
@@ -76,15 +164,19 @@ export default function CheckoutPage() {
         customer_name: formData.name,
         customer_email: formData.email,
         customer_phone: formData.phone,
-        shipping_address: formData.address,
+        shipping_address: `${formData.street} ${formData.exteriorNumber}`,
+        shipping_neighborhood: formData.neighborhood,
         shipping_zip: formData.zip,
         shipping_city: formData.city,
         shipping_state: formData.state,
         items: items,
         shipping_cost: selectedShipping ? (selectedShipping.amount_local || selectedShipping.amount) : 0,
-        shipping_provider: selectedShipping ? selectedShipping.provider : 'Local',
+        shipping_provider: selectedShipping ? `${selectedShipping.provider} - ${selectedShipping.service_level_name}` : 'Local',
+        shipping_breakdown: selectedShipping ? selectedShipping.breakdown : null,
         coupon_code: couponCode,
-        coupon_discount: couponDiscount
+        coupon_discount: couponDiscount,
+        payment_method: paymentMethod,
+        save_payment_method: savePaymentMethod
       };
 
       const res = await fetch('http://localhost:8000/api/v1/checkout/place-order', {
@@ -95,9 +187,15 @@ export default function CheckoutPage() {
       
       const data = await res.json();
       if (data.success) {
-        setOrderSuccess(data);
-        clearCart();
-        setStep(4);
+        if (paymentMethod === 'Stripe' && data.client_secret) {
+          setClientSecret(data.client_secret);
+          setOrderSuccess(data); // We store the order info but don't show success yet
+          setStep(3.5);
+        } else {
+          setOrderSuccess(data);
+          clearCart();
+          setStep(4);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -112,7 +210,12 @@ export default function CheckoutPage() {
     return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  if (orderSuccess) {
+  const handlePaymentSuccess = () => {
+    clearCart();
+    setStep(4);
+  };
+
+  if (step === 4 && orderSuccess) {
     return (
       <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
         <style dangerouslySetInnerHTML={{__html: `
@@ -131,22 +234,24 @@ export default function CheckoutPage() {
               Gracias por tu compra. Tu número de pedido es <strong style={{ color: 'var(--text-color)', fontSize: '1.2rem', display: 'inline-block', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '6px' }}>{orderSuccess.order_id}</strong>.
             </p>
             
-            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '25px', borderRadius: '16px', marginBottom: '35px', textAlign: 'left', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: '#10b981' }}></div>
-              <h3 style={{ marginBottom: '15px', color: 'var(--text-color)', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Instrucciones de Pago (SPEI)
-              </h3>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '15px', lineHeight: '1.5' }}>{orderSuccess.payment_instructions}</p>
-              
-              <div style={{ background: 'var(--input-bg)', padding: '15px', borderRadius: '8px', border: '1px solid var(--input-border)', display: 'grid', gap: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{color: 'var(--text-muted)'}}>Banco:</span> <strong style={{color: 'var(--text-color)'}}>STP</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{color: 'var(--text-muted)'}}>CLABE:</span> <strong style={{color: 'var(--text-color)', letterSpacing: '1px'}}>000000000000000000</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '5px' }}>
-                  <span style={{color: 'var(--text-muted)'}}>Monto a transferir:</span> 
-                  <strong style={{color: '#10b981', fontSize: '1.2rem'}}>${formatCurrency(totalToPay)}</strong>
+            {paymentMethod === 'SPEI' && (
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '25px', borderRadius: '16px', marginBottom: '35px', textAlign: 'left', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: '#10b981' }}></div>
+                <h3 style={{ marginBottom: '15px', color: 'var(--text-color)', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  Instrucciones de Pago (SPEI)
+                </h3>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '15px', lineHeight: '1.5' }}>{orderSuccess.payment_instructions}</p>
+                
+                <div style={{ background: 'var(--input-bg)', padding: '15px', borderRadius: '8px', border: '1px solid var(--input-border)', display: 'grid', gap: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{color: 'var(--text-muted)'}}>Banco:</span> <strong style={{color: 'var(--text-color)'}}>STP</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{color: 'var(--text-muted)'}}>CLABE:</span> <strong style={{color: 'var(--text-color)', letterSpacing: '1px'}}>000000000000000000</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '5px' }}>
+                    <span style={{color: 'var(--text-muted)'}}>Monto a transferir:</span> 
+                    <strong style={{color: '#10b981', fontSize: '1.2rem'}}>${formatCurrency(totalToPay)}</strong>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             
             <Link href="/">
               <button className="btn-primary" style={{ width: '100%', padding: '16px', fontSize: '1.1rem', borderRadius: '12px' }}>Volver al Inicio</button>
@@ -157,6 +262,18 @@ export default function CheckoutPage() {
     );
   }
 
+  
+      <AddressModal 
+        isOpen={isAddressModalOpen} 
+        onClose={() => setIsAddressModalOpen(false)} 
+        formData={formData} 
+        handleInputChange={handleInputChange} 
+        saveAddress={saveAddress} 
+        setSaveAddress={setSaveAddress} 
+        onSubmit={() => {
+          setIsAddressModalOpen(false);
+        }} 
+      />
   return (
     <main style={{ minHeight: '100vh', padding: '40px 20px', maxWidth: '1200px', margin: '0 auto' }}>
       <style dangerouslySetInnerHTML={{__html: `
@@ -203,46 +320,161 @@ export default function CheckoutPage() {
             <form onSubmit={handleStep1Submit} className="animate-fade-in-up" style={{ position: 'relative', zIndex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
                 <div style={{ padding: '8px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '10px' }}>
-                  <Package size={20} color="var(--primary)" />
+                  <MapPin size={20} color="var(--primary)" />
                 </div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 600 }}>Datos de Envío</h2>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 600 }}>Dirección de Envío</h2>
               </div>
               
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Nombre Completo</label>
-                  <input required type="text" name="name" value={formData.name} onChange={handleInputChange} className="input-premium" />
+              {/* Selector de Direcciones */}
+              {user && userAddresses.length > 0 && (
+                <div style={{ marginBottom: '30px' }}>
+                  <label style={{ display: 'block', marginBottom: '12px', color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 500 }}>Mis Direcciones Guardadas</label>
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    {userAddresses.map((addr) => (
+                      <div 
+                        key={addr.id}
+                        onClick={() => {
+                          setSelectedAddressId(addr.id);
+                          populateFormWithAddress(addr);
+                        }}
+                        style={{ 
+                          padding: '16px', 
+                          border: selectedAddressId === addr.id ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)', 
+                          background: selectedAddressId === addr.id ? 'rgba(139, 92, 246, 0.05)' : 'var(--input-bg)', 
+                          borderRadius: '12px', 
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '15px',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '50%' }}>
+                           {addr.icon_name === 'Home' ? <Home size={20} color="var(--text-muted)" /> : <MapPin size={20} color="var(--text-muted)" />}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-color)', fontWeight: 600 }}>{addr.alias || 'Dirección'} {addr.is_default && <span style={{ fontSize: '0.75rem', background: 'var(--primary)', color: 'white', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px' }}>Predeterminada</span>}</h4>
+                          <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                            {addr.street} {addr.exterior_number}, {addr.neighborhood}, C.P. {addr.zip_code}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <div 
+                      onClick={() => {
+                        setSelectedAddressId('new');
+                        setFormData(prev => ({ ...prev, street: '', exteriorNumber: '', neighborhood: '', city: '', state: '', zip: '' }));
+                        setIsAddressModalOpen(true);
+                      }}
+                      style={{ 
+                        padding: '16px', 
+                        border: selectedAddressId === 'new' ? '2px solid var(--primary)' : '1px dashed rgba(255,255,255,0.2)', 
+                        background: selectedAddressId === 'new' ? 'rgba(139, 92, 246, 0.05)' : 'transparent', 
+                        borderRadius: '12px', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        transition: 'all 0.2s',
+                        color: selectedAddressId === 'new' ? 'var(--primary)' : 'var(--text-muted)'
+                      }}
+                    >
+                      <Plus size={20} />
+                      <span style={{ fontWeight: 500 }}>Usar Otra Dirección</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Correo Electrónico</label>
-                  <input required type="email" name="email" value={formData.email} onChange={handleInputChange} className="input-premium" />
+              )}
+
+              {/* Formulario de Nueva Dirección (o editar datos de contacto) */}
+              <div style={{ display: (!user || userAddresses.length === 0) ? 'block' : 'none', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '30px' }}>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', color: 'var(--text-color)', fontWeight: 600 }}>
+                  {userAddresses.length === 0 ? 'Datos de Contacto y Envío' : 'Nueva Dirección de Envío'}
+                </h3>
+                
+                {/* Datos de Contacto */}
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Nombre Completo</label>
+                    <input required type="text" name="name" value={formData.name} onChange={handleInputChange} className="input-premium" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Correo Electrónico</label>
+                    <input required type="email" name="email" value={formData.email} onChange={handleInputChange} className="input-premium" />
+                  </div>
                 </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Teléfono</label>
+                  <input required type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="input-premium" />
+                </div>
+
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Calle</label>
+                    <input required={selectedAddressId === 'new'} type="text" name="street" value={formData.street} onChange={handleInputChange} className="input-premium" placeholder="Ej. Av. Insurgentes Sur" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Número Exterior</label>
+                    <input required={selectedAddressId === 'new'} type="text" name="exteriorNumber" value={formData.exteriorNumber} onChange={handleInputChange} className="input-premium" placeholder="Ej. 123" />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Colonia</label>
+                  <input required={selectedAddressId === 'new'} type="text" name="neighborhood" value={formData.neighborhood} onChange={handleInputChange} className="input-premium" placeholder="Ej. Roma Norte" />
+                </div>
+
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Código Postal</label>
+                    <input required={selectedAddressId === 'new'} type="text" maxLength={5} name="zip" value={formData.zip} onChange={handleInputChange} className="input-premium" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Ciudad</label>
+                    <input required={selectedAddressId === 'new'} type="text" name="city" value={formData.city} onChange={handleInputChange} className="input-premium" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Estado</label>
+                    <input required={selectedAddressId === 'new'} type="text" name="state" value={formData.state} onChange={handleInputChange} className="input-premium" />
+                  </div>
+                </div>
+                
+                {user && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginTop: '20px', padding: '12px', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '8px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={saveAddress}
+                      onChange={(e) => setSaveAddress(e.target.checked)}
+                      style={{ accentColor: '#8b5cf6', width: '18px', height: '18px' }}
+                    />
+                    <span style={{ color: 'var(--text-color)', fontSize: '0.95rem' }}>Guardar Dirección para futuras compras</span>
+                  </label>
+                )}
               </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Teléfono</label>
-                <input required type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="input-premium" />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Dirección Completa (Calle, Número, Colonia)</label>
-                <input required type="text" name="address" value={formData.address} onChange={handleInputChange} className="input-premium" />
-              </div>
-
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Código Postal</label>
-                  <input required type="text" maxLength={5} name="zip" value={formData.zip} onChange={handleInputChange} className="input-premium" />
+              {/* Datos de contacto para usuarios que usan direcciones guardadas o nueva desde modal */}
+              {(user && userAddresses.length > 0) && (
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '30px' }}>
+                  <h3 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--text-color)', fontWeight: 500 }}>Datos de Contacto</h3>
+                  <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Nombre</label>
+                      <input required type="text" name="name" value={formData.name} onChange={handleInputChange} className="input-premium" style={{ padding: '10px' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Correo</label>
+                      <input required type="email" name="email" value={formData.email} onChange={handleInputChange} className="input-premium" style={{ padding: '10px' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Teléfono</label>
+                      <input required type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="input-premium" style={{ padding: '10px' }} />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Ciudad</label>
-                  <input required type="text" name="city" value={formData.city} onChange={handleInputChange} className="input-premium" />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>Estado</label>
-                  <input required type="text" name="state" value={formData.state} onChange={handleInputChange} className="input-premium" />
-                </div>
-              </div>
+              )}
 
               <button type="submit" className="btn-primary" style={{ width: '100%', padding: '16px', fontSize: '1.1rem', borderRadius: '12px', display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
                 Continuar a Envíos <ArrowRight size={20} />
@@ -343,26 +575,58 @@ export default function CheckoutPage() {
                 <h2 style={{ fontSize: '1.4rem', fontWeight: 600 }}>Método de Pago</h2>
               </div>
               
-              <div style={{ padding: '24px', border: '2px solid #10b981', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '16px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }}></div>
+              <div 
+                onClick={() => setPaymentMethod('SPEI')}
+                style={{ cursor: 'pointer', padding: '24px', border: paymentMethod === 'SPEI' ? '2px solid #10b981' : '1px solid var(--input-border)', background: paymentMethod === 'SPEI' ? 'rgba(16, 185, 129, 0.05)' : 'var(--input-bg)', borderRadius: '16px', marginBottom: '24px', position: 'relative', overflow: 'hidden', transition: 'all 0.2s' }}
+              >
+                {paymentMethod === 'SPEI' && <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }}></div>}
                 <h3 style={{ fontSize: '1.15rem', marginBottom: '12px', color: 'var(--text-color)', fontWeight: 600 }}>Transferencia SPEI (Manual)</h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>Al confirmar tu pedido te daremos una CLABE interbancaria para que realices tu pago desde la app de tu banco. Tu pedido se procesará al confirmar la recepción de los fondos.</p>
               </div>
 
-              {/* Placeholder para Stripe/MercadoPago futuro */}
-              <div style={{ padding: '24px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', borderRadius: '16px', marginBottom: '32px', opacity: 0.5 }}>
-                <h3 style={{ fontSize: '1.15rem', marginBottom: '12px', color: 'var(--text-color)', fontWeight: 600 }}>Tarjeta de Crédito / MercadoPago</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>Próximamente disponible.</p>
+              <div 
+                onClick={() => setPaymentMethod('Stripe')}
+                style={{ cursor: 'pointer', padding: '24px', border: paymentMethod === 'Stripe' ? '2px solid #8b5cf6' : '1px solid var(--input-border)', background: paymentMethod === 'Stripe' ? 'rgba(139, 92, 246, 0.05)' : 'var(--input-bg)', borderRadius: '16px', marginBottom: '32px', position: 'relative', overflow: 'hidden', transition: 'all 0.2s' }}
+              >
+                {paymentMethod === 'Stripe' && <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#8b5cf6' }}></div>}
+                <h3 style={{ fontSize: '1.15rem', marginBottom: '12px', color: 'var(--text-color)', fontWeight: 600 }}>Tarjeta de Crédito / Débito Seguro</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '15px' }}>Paga de forma segura usando la plataforma de pagos cifrados de Stripe. Aceptamos todas las tarjetas.</p>
+                
+                {paymentMethod === 'Stripe' && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }} onClick={(e) => e.stopPropagation()}>
+                    <input 
+                      type="checkbox" 
+                      checked={savePaymentMethod}
+                      onChange={(e) => setSavePaymentMethod(e.target.checked)}
+                      style={{ accentColor: '#8b5cf6', width: '18px', height: '18px' }}
+                    />
+                    <span style={{ color: 'var(--text-color)', fontSize: '0.95rem' }}>Guardar mi tarjeta para futuras compras de forma segura</span>
+                  </label>
+                )}
               </div>
 
               <button 
                 onClick={placeOrder} 
                 disabled={isPlacingOrder}
                 className="btn-primary" 
-                style={{ width: '100%', padding: '16px', fontSize: '1.1rem', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', borderRadius: '12px', border: 'none', fontWeight: 600, boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)' }}
+                style={{ width: '100%', padding: '16px', fontSize: '1.1rem', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: 'white', borderRadius: '12px', border: 'none', fontWeight: 600, boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)' }}
               >
-                {isPlacingOrder ? 'Procesando...' : 'Confirmar Pedido'}
+                {isPlacingOrder ? 'Procesando...' : 'Confirmar y Continuar'}
               </button>
+            </div>
+          )}
+
+          {step === 3.5 && clientSecret && (
+            <div className="animate-fade-in-up" style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <div style={{ padding: '8px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '10px' }}>
+                  <CreditCard size={20} color="var(--primary)" />
+                </div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 600 }}>Pago Seguro con Tarjeta</h2>
+              </div>
+              <StripeProvider clientSecret={clientSecret}>
+                <PaymentForm onSuccess={handlePaymentSuccess} orderId={orderSuccess?.order_id || ""} />
+              </StripeProvider>
             </div>
           )}
         </div>

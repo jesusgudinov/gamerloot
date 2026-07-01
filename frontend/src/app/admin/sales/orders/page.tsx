@@ -319,6 +319,13 @@ export default function OrdersPage() {
               </div>
             </div>
 
+            {viewingOrder.status === 'Pago Declinado' && viewingOrder.rejection_reason && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', borderLeft: '4px solid #ef4444', padding: '12px', borderRadius: '4px' }}>
+                <p style={{ margin: 0, color: '#ef4444', fontWeight: 'bold', fontSize: '0.9rem' }}>Motivo de Rechazo (Stripe):</p>
+                <p style={{ margin: '4px 0 0 0', color: '#fca5a5', fontSize: '0.85rem' }}>{viewingOrder.rejection_reason}</p>
+              </div>
+            )}
+
             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '8px' }}>
               <h3 style={{ margin: '0 0 12px 0', fontSize: '1.1rem' }}>Cliente y Envío</h3>
               <p style={{ margin: '4px 0' }}><strong>Cliente:</strong> {viewingOrder.customer_name}</p>
@@ -334,11 +341,30 @@ export default function OrdersPage() {
               {viewingOrder.address_references && (
                 <p style={{ margin: '4px 0' }}><strong>Referencias:</strong> {viewingOrder.address_references}</p>
               )}
-              {viewingOrder.carrier && (
-                <p style={{ margin: '12px 0 0 0', color: '#10b981' }}><strong>Paquetería:</strong> {viewingOrder.carrier}</p>
-              )}
-              {viewingOrder.tracking_number && (
-                <p style={{ margin: '4px 0 0 0', color: '#10b981' }}><strong>Guía:</strong> {viewingOrder.tracking_number}</p>
+              {(viewingOrder.shipments_data && Array.isArray(viewingOrder.shipments_data) && viewingOrder.shipments_data.length > 0) ? (
+                <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+                  <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}><strong>Guías Múltiples ({viewingOrder.shipments_data.length})</strong></p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {viewingOrder.shipments_data.map((shipment: any, idx: number) => (
+                      <div key={idx} style={{ padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#10b981' }}>{shipment.carrier || 'N/A'} - {shipment.tracking_number || 'Pendiente'}</span>
+                          <span style={{ color: 'var(--text-muted)' }}>C.P. {shipment.origin_zip}</span>
+                        </div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>Status: {shipment.status}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {viewingOrder.carrier && (
+                    <p style={{ margin: '12px 0 0 0', color: '#10b981' }}><strong>Paquetería:</strong> {viewingOrder.carrier}</p>
+                  )}
+                  {viewingOrder.tracking_number && (
+                    <p style={{ margin: '4px 0 0 0', color: '#10b981' }}><strong>Guía:</strong> {viewingOrder.tracking_number}</p>
+                  )}
+                </>
               )}
               {viewingOrder.customer_notes && (
                 <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', borderLeft: '4px solid var(--primary)' }}>

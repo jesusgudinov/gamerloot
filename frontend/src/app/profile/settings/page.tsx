@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Settings as SettingsIcon, Shield, User as UserIcon, Lock, CheckCircle, AlertTriangle, Smartphone } from 'lucide-react';
+import { Settings as SettingsIcon, Shield, User as UserIcon, Lock, CheckCircle, AlertTriangle, Smartphone, FileText } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function SettingsPage() {
@@ -32,8 +32,48 @@ export default function SettingsPage() {
   const [mfaActivating, setMfaActivating] = useState(false);
   const [mfaError, setMfaError] = useState('');
   const [mfaSuccess, setMfaSuccess] = useState(false);
+  
+  // MFA Disable State
+  const [mfaDisabling, setMfaDisabling] = useState(false);
+  const [mfaDisableCode, setMfaDisableCode] = useState('');
+  const [mfaDisableActivating, setMfaDisableActivating] = useState(false);
+  const [mfaDisableError, setMfaDisableError] = useState('');
+
+  // Billing State
+  const [billingData, setBillingData] = useState({
+    rfc: '',
+    business_name: '',
+    tax_regime: '',
+    cfdi_use: '',
+    zip_code: ''
+  });
+  const [billingSaving, setBillingSaving] = useState(false);
+  const [billingSuccess, setBillingSuccess] = useState(false);
+  const [billingError, setBillingError] = useState('');
 
   useEffect(() => {
+    // Fetch billing profile
+    const fetchBilling = async () => {
+      try {
+        const res = await fetch('http://localhost:8000/api/v1/invoices/billing-profile', {
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setBillingData({
+            rfc: data.rfc || '',
+            business_name: data.business_name || '',
+            tax_regime: data.tax_regime || '',
+            cfdi_use: data.cfdi_use || '',
+            zip_code: data.zip_code || ''
+          });
+        }
+      } catch (e) {
+        console.error("Error fetching billing profile", e);
+      }
+    };
+    fetchBilling();
+    
     if (user) {
       setProfileData({
         full_name: user.full_name || '',
@@ -160,6 +200,66 @@ export default function SettingsPage() {
       setMfaError('Error de red');
     } finally {
       setMfaActivating(false);
+    }
+  };
+
+  const handleDisableMfa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMfaDisableActivating(true);
+    setMfaDisableError('');
+    
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/auth/mfa/disable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code: mfaDisableCode })
+      });
+      
+      if (res.ok) {
+        setMfaSuccess(false);
+        setMfaDisabling(false);
+        setMfaDisableCode('');
+        // Update user context dynamically
+        if (user) {
+          updateUser({ ...user, mfa_enabled: false });
+        }
+      } else {
+        const err = await res.json();
+        setMfaDisableError(err.detail || 'Código incorrecto');
+      }
+    } catch (e) {
+      setMfaDisableError('Error de red');
+    } finally {
+      setMfaDisableActivating(false);
+    }
+  };
+
+  const handleBillingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBillingSaving(true);
+    setBillingSuccess(false);
+    setBillingError('');
+    
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/invoices/billing-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(billingData)
+      });
+      
+      if (res.ok) {
+        setBillingSuccess(true);
+        setTimeout(() => setBillingSuccess(false), 3000);
+      } else {
+        const err = await res.json();
+        setBillingError(err.detail || 'Error al guardar datos de facturación');
+      }
+    } catch (error) {
+      setBillingError('Error de red al guardar.');
+    } finally {
+      setBillingSaving(false);
     }
   };
 
@@ -327,6 +427,129 @@ export default function SettingsPage() {
           </form>
         </div>
 
+        {/* Billing Card */}
+        <div className="glass-panel" style={{ padding: '32px', borderRadius: '24px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }}></div>
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%)', filter: 'blur(20px)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+          
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 24px 0', color: 'var(--foreground)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '10px', borderRadius: '12px' }}>
+              <FileText size={24} color="#10b981" />
+            </div>
+            Datos Fiscales
+          </h2>
+
+          <form onSubmit={handleBillingSubmit} style={{ position: 'relative', zIndex: 1 }}>
+            
+            {billingError && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '12px 16px', borderRadius: '12px', color: '#ef4444', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem' }}>
+                <AlertTriangle size={18} /> {billingError}
+              </div>
+            )}
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-muted)' }}>RFC</label>
+              <input 
+                type="text" 
+                value={billingData.rfc} 
+                onChange={(e) => setBillingData({...billingData, rfc: e.target.value})}
+                required
+                placeholder="AAAA000000AAA"
+                style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'var(--input-bg)', border: '1px solid var(--card-border)', color: 'var(--foreground)', outline: 'none', transition: 'border-color 0.2s', textTransform: 'uppercase' }} 
+                onFocus={(e) => e.target.style.borderColor = '#10b981'} 
+                onBlur={(e) => e.target.style.borderColor = 'var(--card-border)'}
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-muted)' }}>Razón Social</label>
+              <input 
+                type="text" 
+                value={billingData.business_name} 
+                onChange={(e) => setBillingData({...billingData, business_name: e.target.value})}
+                required
+                placeholder="Nombre de la Empresa o Persona"
+                style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'var(--input-bg)', border: '1px solid var(--card-border)', color: 'var(--foreground)', outline: 'none', transition: 'border-color 0.2s' }} 
+                onFocus={(e) => e.target.style.borderColor = '#10b981'} 
+                onBlur={(e) => e.target.style.borderColor = 'var(--card-border)'}
+              />
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-muted)' }}>C.P. Fiscal</label>
+                <input 
+                  type="text" 
+                  value={billingData.zip_code} 
+                  onChange={(e) => setBillingData({...billingData, zip_code: e.target.value})}
+                  required
+                  placeholder="00000"
+                  maxLength={5}
+                  style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'var(--input-bg)', border: '1px solid var(--card-border)', color: 'var(--foreground)', outline: 'none', transition: 'border-color 0.2s' }} 
+                  onFocus={(e) => e.target.style.borderColor = '#10b981'} 
+                  onBlur={(e) => e.target.style.borderColor = 'var(--card-border)'}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-muted)' }}>Uso CFDI</label>
+                <select 
+                  value={billingData.cfdi_use} 
+                  onChange={(e) => setBillingData({...billingData, cfdi_use: e.target.value})}
+                  required
+                  style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'var(--input-bg)', border: '1px solid var(--card-border)', color: 'var(--foreground)', outline: 'none', transition: 'border-color 0.2s', appearance: 'none' }} 
+                  onFocus={(e) => e.target.style.borderColor = '#10b981'} 
+                  onBlur={(e) => e.target.style.borderColor = 'var(--card-border)'}
+                >
+                  <option value="" disabled>Selecciona Uso</option>
+                  <option value="G01">G01 - Adquisición de mercancias</option>
+                  <option value="G03">G03 - Gastos en general</option>
+                  <option value="I04">I04 - Equipo de computo y accesorios</option>
+                  <option value="S01">S01 - Sin efectos fiscales</option>
+                  <option value="CP01">CP01 - Pagos</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-muted)' }}>Régimen Fiscal</label>
+              <select 
+                value={billingData.tax_regime} 
+                onChange={(e) => setBillingData({...billingData, tax_regime: e.target.value})}
+                required
+                style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'var(--input-bg)', border: '1px solid var(--card-border)', color: 'var(--foreground)', outline: 'none', transition: 'border-color 0.2s', appearance: 'none' }} 
+                onFocus={(e) => e.target.style.borderColor = '#10b981'} 
+                onBlur={(e) => e.target.style.borderColor = 'var(--card-border)'}
+              >
+                <option value="" disabled>Selecciona Régimen</option>
+                <option value="601">601 - General de Ley Personas Morales</option>
+                <option value="605">605 - Sueldos y Salarios e Ingresos Asimilados a Salarios</option>
+                <option value="606">606 - Arrendamiento</option>
+                <option value="612">612 - Personas Físicas con Actividades Empresariales y Profesionales</option>
+                <option value="616">616 - Sin obligaciones fiscales</option>
+                <option value="625">625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas</option>
+                <option value="626">626 - Régimen Simplificado de Confianza (RESICO)</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button 
+                type="submit" 
+                disabled={billingSaving} 
+                className="hover-card" 
+                style={{ padding: '14px 24px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', fontWeight: 800, fontSize: '1.05rem', cursor: 'pointer', transition: 'all 0.3s ease', opacity: billingSaving ? 0.7 : 1, width: billingSuccess ? 'auto' : '100%' }}
+              >
+                {billingSaving ? 'Guardando...' : 'Guardar Datos Fiscales'}
+              </button>
+              
+              {billingSuccess && (
+                <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem', fontWeight: 600, animation: 'fadeIn 0.3s ease-in-out' }}>
+                  <CheckCircle size={18} /> Guardado
+                </span>
+              )}
+            </div>
+          </form>
+        </div>
+
         {/* MFA / 2FA Card */}
         <div className="glass-panel" style={{ padding: '32px', borderRadius: '24px', position: 'relative', overflow: 'hidden', gridColumn: '1 / -1' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#3b82f6' }}></div>
@@ -347,9 +570,36 @@ export default function SettingsPage() {
             
             <div>
               {user?.mfa_enabled || mfaSuccess ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontWeight: 700, padding: '12px 24px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px' }}>
-                  <CheckCircle size={20} /> MFA Activado Exitosamente
-                </div>
+                mfaDisabling ? (
+                  <form onSubmit={handleDisableMfa} style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--input-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--card-border)' }}>
+                    <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
+                      Para desactivar el MFA, ingresa el código de 6 dígitos de tu aplicación autenticadora.
+                    </p>
+                    {mfaDisableError && <span style={{ color: '#ef4444', fontSize: '0.85rem', textAlign: 'center' }}>{mfaDisableError}</span>}
+                    <input 
+                      type="text" 
+                      required 
+                      maxLength={6} 
+                      value={mfaDisableCode}
+                      onChange={e => setMfaDisableCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="000000"
+                      style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--background)', border: '1px solid var(--card-border)', color: 'var(--foreground)', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '8px', outline: 'none' }}
+                    />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button type="button" onClick={() => { setMfaDisabling(false); setMfaDisableCode(''); }} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--card-border)', borderRadius: '12px', cursor: 'pointer', fontWeight: 600 }}>Cancelar</button>
+                      <button type="submit" disabled={mfaDisableActivating || mfaDisableCode.length !== 6} style={{ flex: 1, padding: '12px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '12px', cursor: mfaDisableCode.length === 6 ? 'pointer' : 'not-allowed', fontWeight: 600, opacity: mfaDisableCode.length === 6 ? 1 : 0.5 }}>Desactivar</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontWeight: 700, padding: '12px 24px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px' }}>
+                      <CheckCircle size={20} /> MFA Activado Exitosamente
+                    </div>
+                    <button onClick={() => setMfaDisabling(true)} className="hover-card" style={{ padding: '12px 24px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.3s' }}>
+                      Desactivar MFA
+                    </button>
+                  </div>
+                )
               ) : mfaSetupUri ? (
                 <form onSubmit={handleEnableMfa} style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--input-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--card-border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', background: '#fff', padding: '16px', borderRadius: '12px' }}>

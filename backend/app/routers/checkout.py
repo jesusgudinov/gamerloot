@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 
 from app.db.session import get_db
-from app.services.skydropx import SkydropxService
+from app.services.skydropx_service import SkydropxService
 from app.api.deps import get_current_active_user
 from app.models.user import User
 from app.models.sales import Order, OrderItem
 from app.models.product import Product
 from app.models.marketing import Coupon
 from app.models.inventory import InventoryStock, Warehouse
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 import random
 from datetime import datetime, timezone
 
@@ -19,6 +19,8 @@ router = APIRouter()
 
 class QuoteShippingRequest(BaseModel):
     destination_zip: str
+    destination_city: Optional[str] = None
+    destination_state: Optional[str] = None
     items: List[Dict[str, Any]] # { "product_id": 1, "quantity": 2, "weight": 1.5 }
 
 @router.post("/quote-shipping")
@@ -26,7 +28,7 @@ async def quote_shipping(req: QuoteShippingRequest, db: AsyncSession = Depends(g
     if not req.destination_zip or len(req.destination_zip) != 5:
         raise HTTPException(status_code=400, detail="Código postal inválido")
         
-    origin_groups = {} # zip_code -> items
+    origin_zips = set()
     
     for item in req.items:
         # Check stock location
@@ -38,87 +40,80 @@ async def quote_shipping(req: QuoteShippingRequest, db: AsyncSession = Depends(g
         warehouse = res.scalar_one_or_none()
         
         origin_zip = warehouse.zip_code if warehouse and warehouse.zip_code else "06700"
+        origin_zips.add(origin_zip)
         
-        if origin_zip not in origin_groups:
-            origin_groups[origin_zip] = []
-        origin_groups[origin_zip].append(item)
-        
+    # Lógica de Origen Unificado
+    # Si todos los productos salen de una misma bodega, usamos ese CP.
+    # Si salen de múltiples bodegas, usamos la bodega Gamerloot GDL (45403).
+    if len(origin_zips) == 1:
+        final_origin_zip = list(origin_zips)[0]
+    else:
+        final_origin_zip = "45403"
+            
     skydropx = SkydropxService()
     from app.core.packaging import calculate_virtual_parcel
-    import asyncio
     
-    tasks = []
-    origins_used = list(origin_groups.keys())
+    # Calcular 1 sola caja virtual con todos los ítems
+    parcel = calculate_virtual_parcel(req.items)
     
-    for origin_zip, items in origin_groups.items():
-        parcel = calculate_virtual_parcel(items)
-        tasks.append(skydropx.get_rates_v2(origin_zip, req.destination_zip, parcel))
+    # Cotizar 1 sola vez
+    rates = await skydropx.get_rates(final_origin_zip, req.destination_zip, parcel)
+    
+    if not rates:
+        raise HTTPException(status_code=400, detail="No se pudieron cotizar envíos para esta ruta.")
         
-    results = await asyncio.gather(*tasks)
+    # 1. ESTÁNDAR: La más barata
+    best_std = min(rates, key=lambda x: x["amount_local"])
+    std_breakdown = [{
+        "origin_zip": final_origin_zip,
+        "provider": best_std["provider"],
+        "days": best_std["days"],
+        "cost": best_std["amount_local"],
+        "items": [i.get("product_id") for i in req.items],
+        "rate_id": best_std.get("rate_id", "")
+    }]
     
-    total_cost_std = 0.0
-    unified_breakdown_std = []
+    # 2. EXPRESS: La más rápida (si hay empate, la más barata de las rápidas)
+    min_days = min(rates, key=lambda x: x["days"])["days"]
+    fastest_rates = [r for r in rates if r["days"] == min_days]
+    best_exp = min(fastest_rates, key=lambda x: x["amount_local"])
     
-    total_cost_exp = 0.0
-    unified_breakdown_exp = []
-    
-    for origin_zip, rates in zip(origins_used, results):
-        if not rates:
-            continue
-        
-        # Standard: Cheapest
-        best_std = min(rates, key=lambda x: x["amount_local"])
-        total_cost_std += best_std["amount_local"]
-        unified_breakdown_std.append({
-            "origin_zip": origin_zip,
-            "provider": best_std["provider"],
-            "days": best_std["days"],
-            "cost": best_std["amount_local"],
-            "items": [i.get("product_id") for i in origin_groups[origin_zip]]
-        })
-        
-        # Express: Fastest (if tied, cheapest of fastest)
-        best_exp = min(rates, key=lambda x: (x["days"], x["amount_local"]))
-        total_cost_exp += best_exp["amount_local"]
-        unified_breakdown_exp.append({
-            "origin_zip": origin_zip,
-            "provider": best_exp["provider"],
-            "days": best_exp["days"],
-            "cost": best_exp["amount_local"],
-            "items": [i.get("product_id") for i in origin_groups[origin_zip]]
-        })
-        
-    if not unified_breakdown_std:
-        raise HTTPException(status_code=400, detail="No se pudieron cotizar envíos para los productos")
+    exp_breakdown = [{
+        "origin_zip": final_origin_zip,
+        "provider": best_exp["provider"],
+        "days": best_exp["days"],
+        "cost": best_exp["amount_local"],
+        "items": [i.get("product_id") for i in req.items],
+        "rate_id": best_exp.get("rate_id", "")
+    }]
 
-    max_days_std = max([b["days"] for b in unified_breakdown_std])
-    combined_rate_std = {
-        "provider": "Loot Unificado",
+    final_rates = []
+    
+    # Agregar Estándar
+    final_rates.append({
+        "provider": best_std["provider"],
         "service_level_name": "Estándar",
-        "service_level_code": "GL_STD",
-        "amount_local": round(total_cost_std, 2),
+        "service_level_code": f"{best_std['provider'][:3].upper()}_STD",
+        "amount_local": round(best_std["amount_local"], 2),
         "currency": "MXN",
-        "days": max_days_std,
-        "breakdown": unified_breakdown_std
-    }
+        "days": best_std["days"],
+        "breakdown": std_breakdown
+    })
     
-    final_rates = [combined_rate_std]
-    
-    max_days_exp = max([b["days"] for b in unified_breakdown_exp])
-    # Only offer Express if it's faster or at least different in service/cost
-    if total_cost_exp > total_cost_std and max_days_exp < max_days_std:
-        combined_rate_exp = {
-            "provider": "Loot Unificado",
+    # Agregar Express si difiere en costo o tiempo
+    if best_exp["amount_local"] != best_std["amount_local"] or best_exp["days"] != best_std["days"]:
+        final_rates.append({
+            "provider": best_exp["provider"],
             "service_level_name": "Express",
-            "service_level_code": "GL_EXP",
-            "amount_local": round(total_cost_exp, 2),
+            "service_level_code": f"{best_exp['provider'][:3].upper()}_EXP",
+            "amount_local": round(best_exp["amount_local"], 2),
             "currency": "MXN",
-            "days": max_days_exp,
-            "breakdown": unified_breakdown_exp
-        }
-        final_rates.append(combined_rate_exp)
-    
+            "days": best_exp["days"],
+            "breakdown": exp_breakdown
+        })
+        
     return {"rates": final_rates}
+
 
 class ValidateCouponRequest(BaseModel):
     code: str
@@ -176,13 +171,18 @@ class PlaceOrderRequest(BaseModel):
     customer_email: str
     customer_phone: str
     shipping_address: str
+    shipping_neighborhood: str
     shipping_zip: str
     shipping_city: str
     shipping_state: str
     items: List[Dict[str, Any]]
     shipping_cost: float
     shipping_provider: str
-    coupon_code: str = None
+    shipping_breakdown: Optional[List[Dict[str, Any]]] = None
+    coupon_code: Optional[str] = None
+    coupon_discount: Optional[float] = None
+    payment_method: str = "SPEI"
+    save_payment_method: bool = False
 
 @router.post("/place-order")
 async def place_order(req: PlaceOrderRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_active_user)):
@@ -195,8 +195,8 @@ async def place_order(req: PlaceOrderRequest, db: AsyncSession = Depends(get_db)
         folio = f"LOOT-{random.randint(100000, 999999)}"
 
     # 2. Calcular totales reales basados en el backend (por seguridad, ignoramos totales del frontend pero para MVP lo mapeamos)
-    # Asumimos que los items tienen total_price calculado en frontend
-    subtotal = sum(item.get("total_price", 0) for item in req.items)
+    # Asumimos que los items traen price y quantity del frontend
+    subtotal = sum(float(item.get("price", 0)) * int(item.get("quantity", 1)) for item in req.items)
     
     applied_coupon_id = None
     real_discount = 0.0
@@ -242,15 +242,16 @@ async def place_order(req: PlaceOrderRequest, db: AsyncSession = Depends(get_db)
         state=req.shipping_state,
         city=req.shipping_city,
         address=req.shipping_address,
-        address_references=None,
+        address_references=req.shipping_neighborhood,
         zip_code=req.shipping_zip,
         status="Pendiente",
-        payment_method="SPEI",
+        payment_method=req.payment_method,
         carrier=req.shipping_provider,
         subtotal=subtotal,
         tax=tax,
         total=total,
-        applied_coupon_id=applied_coupon_id
+        applied_coupon_id=applied_coupon_id,
+        shipments_data=req.shipping_breakdown
     )
     db.add(new_order)
     await db.commit()
@@ -258,14 +259,30 @@ async def place_order(req: PlaceOrderRequest, db: AsyncSession = Depends(get_db)
 
     # 4. Insertar Order Items y Reservar Inventario
     for item in req.items:
+        # Obtener costo del proveedor actual (el más bajo disponible)
+        cost_stmt = select(func.min(InventoryStock.supplier_cost)).where(
+            InventoryStock.product_id == item.get("product_id"),
+            InventoryStock.supplier_cost > 0
+        )
+        cost_res = await db.execute(cost_stmt)
+        min_cost = cost_res.scalar() or 0.0
+        
+        unit_cost = min_cost
+        total_cost = unit_cost * item.get("quantity", 1)
+
+        quantity = int(item.get("quantity", 1))
+        unit_price = float(item.get("price", 0))
+
         new_item = OrderItem(
             order_id=new_order.id,
             product_id=item.get("product_id"),
             sku=item.get("sku", "UNKNOWN"),
-            product_name=item.get("product_name", "Unknown Product"),
-            quantity=item.get("quantity", 1),
-            unit_price=item.get("unit_price", 0),
-            total_price=item.get("total_price", 0)
+            product_name=item.get("name", item.get("product_name", "Unknown Product")),
+            quantity=quantity,
+            unit_price=unit_price,
+            total_price=unit_price * quantity,
+            unit_cost=unit_cost,
+            total_cost=total_cost
         )
         db.add(new_item)
         
@@ -278,10 +295,27 @@ async def place_order(req: PlaceOrderRequest, db: AsyncSession = Depends(get_db)
         
     await db.commit()
     
-    return {
+    response_data = {
         "success": True,
         "message": "Pedido creado exitosamente",
         "order_id": new_order.id,
         "folio": folio,
-        "payment_instructions": "Por favor realiza tu transferencia SPEI con el folio del pedido como concepto."
     }
+
+    if req.payment_method == "Stripe":
+        from app.services.stripe_service import StripeService
+        intent = StripeService.create_payment_intent(
+            amount=total, 
+            order_id=new_order.id, 
+            user_email=req.customer_email,
+            customer_name=req.customer_name,
+            save_card=req.save_payment_method
+        )
+        if "client_secret" in intent:
+            response_data["client_secret"] = intent["client_secret"]
+        else:
+            raise HTTPException(status_code=500, detail="Error al procesar el pago con Stripe")
+    else:
+        response_data["payment_instructions"] = "Por favor realiza tu transferencia SPEI con el folio del pedido como concepto."
+    
+    return response_data

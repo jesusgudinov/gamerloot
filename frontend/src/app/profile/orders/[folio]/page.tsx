@@ -37,6 +37,7 @@ interface Order {
   city?: string;
   state?: string;
   zip_code?: string;
+  invoice?: any;
 }
 
 
@@ -51,6 +52,10 @@ export default function OrderDetailsPage() {
   // Payment Module State
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  
+  // Invoice State
+  const [requestingInvoice, setRequestingInvoice] = useState(false);
+  const [invoiceError, setInvoiceError] = useState('');
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -74,6 +79,31 @@ export default function OrderDetailsPage() {
       fetchOrder();
     }
   }, [params.folio]);
+
+  const handleRequestInvoice = async () => {
+    if (!order) return;
+    setRequestingInvoice(true);
+    setInvoiceError('');
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/invoices/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ order_id: order.id })
+      });
+      if (res.ok) {
+        const newInvoice = await res.json();
+        setOrder({ ...order, invoice: newInvoice });
+      } else {
+        const err = await res.json();
+        setInvoiceError(err.detail || 'Error al solicitar la factura');
+      }
+    } catch (e) {
+      setInvoiceError('Error de conexión');
+    } finally {
+      setRequestingInvoice(false);
+    }
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -421,7 +451,57 @@ export default function OrderDetailsPage() {
                 </p>
               )}
 
-              {(order.carrier || order.tracking_number) && (
+              {(order.shipments_data && Array.isArray(order.shipments_data) && order.shipments_data.length > 0) ? (
+                <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--card-border)' }}>
+                  <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
+                    Guías de Rastreo ({order.shipments_data.length})
+                  </p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {order.shipments_data.map((shipment: any, index: number) => (
+                      <div key={index} style={{ padding: '16px', background: 'var(--input-bg)', borderRadius: '16px', border: '1px solid var(--card-border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
+                            Origen: C.P. {shipment.origin_zip || 'N/A'}
+                          </span>
+                          <span style={{ fontSize: '0.8rem', color: shipment.status === 'Guía Generada' ? '#10b981' : 'var(--text-muted)', fontWeight: 600 }}>
+                            {shipment.status || 'Pendiente'}
+                          </span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '8px', borderRadius: '8px' }}>
+                            <Truck size={20} color="#3b82f6" />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{shipment.carrier || 'Asignando...'}</span>
+                            <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--foreground)' }}>{shipment.tracking_number || 'Pendiente'}</span>
+                          </div>
+                        </div>
+
+                        {shipment.tracking_number && (
+                          <a 
+                            href={`https://tracking.skydropx.com/${shipment.tracking_number}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', width: '100%', marginTop: '16px', padding: '10px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--primary)', border: '1px solid rgba(139, 92, 246, 0.3)', textDecoration: 'none', fontWeight: 800, transition: 'all 0.3s', fontSize: '0.9rem' }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.background = 'var(--primary)';
+                              e.currentTarget.style.color = '#fff';
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)';
+                              e.currentTarget.style.color = 'var(--primary)';
+                            }}
+                          >
+                            <ExternalLink size={16} /> Rastrear Paquete
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (order.carrier || order.tracking_number) ? (
                 <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--card-border)' }}>
                   <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Guía de Rastreo</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'var(--input-bg)', borderRadius: '16px', border: '1px solid var(--card-border)' }}>
@@ -448,9 +528,83 @@ export default function OrderDetailsPage() {
                         e.currentTarget.style.color = 'var(--primary)';
                       }}
                     >
-                      Rastrear Envío <ChevronRight size={18} />
+                      <ExternalLink size={20} /> Rastrear Paquete en Skydropx
                     </a>
                   )}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Facturación */}
+          <div className="glass-panel hover-card" style={{ padding: '32px', borderRadius: '24px', background: 'var(--card-bg)', border: '1px solid var(--card-border)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 70%)', filter: 'blur(30px)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#a855f7' }}></div>
+            
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '1.2rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '10px' }}>
+               <FileText size={20} color="#a855f7" /> Facturación
+            </h3>
+            
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              {order.invoice ? (
+                <div style={{ background: 'var(--input-bg)', padding: '16px', borderRadius: '16px', border: '1px solid var(--card-border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Estado</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: order.invoice.status === 'Facturado' ? '#10b981' : '#f59e0b' }}>
+                      {order.invoice.status}
+                    </span>
+                  </div>
+                  
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                    <p style={{ margin: '0 0 4px 0' }}>RFC: <strong style={{ color: 'var(--foreground)' }}>{order.invoice.rfc}</strong></p>
+                    <p style={{ margin: '0 0 4px 0' }}>Razón Social: <strong style={{ color: 'var(--foreground)' }}>{order.invoice.business_name}</strong></p>
+                  </div>
+
+                  {order.invoice.status === 'Facturado' && (
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      {order.invoice.pdf_url && (
+                        <a 
+                          href={`http://localhost:8000${order.invoice.pdf_url}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '10px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', textDecoration: 'none', fontWeight: 700, fontSize: '0.9rem', transition: 'all 0.2s' }}
+                        >
+                          <Download size={16} /> PDF
+                        </a>
+                      )}
+                      {order.invoice.xml_url && (
+                        <a 
+                          href={`http://localhost:8000${order.invoice.xml_url}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '10px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', textDecoration: 'none', fontWeight: 700, fontSize: '0.9rem', transition: 'all 0.2s' }}
+                        >
+                          <Download size={16} /> XML
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                    Puedes solicitar tu factura si la compra fue realizada en el mes en curso. Asegúrate de tener tus datos fiscales configurados en tu perfil.
+                  </p>
+                  
+                  {invoiceError && (
+                    <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '12px', borderRadius: '12px', color: '#ef4444', fontSize: '0.85rem', marginBottom: '16px' }}>
+                      {invoiceError}
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={handleRequestInvoice}
+                    disabled={requestingInvoice}
+                    className="hover-card"
+                    style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.2)', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', transition: 'all 0.3s ease', opacity: requestingInvoice ? 0.7 : 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                  >
+                    {requestingInvoice ? 'Solicitando...' : <><FileText size={18} /> Solicitar Factura</>}
+                  </button>
                 </div>
               )}
             </div>

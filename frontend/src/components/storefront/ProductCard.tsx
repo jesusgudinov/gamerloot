@@ -257,36 +257,7 @@ export default function ProductCard({ product, viewMode = 'grid', eta }: { produ
               )}
             </div>
 
-            {/* ETA Info Spacer / Box */}
-            <div style={{ 
-              flex: '1 1 120px', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '6px',
-              background: 'linear-gradient(to right, rgba(139, 92, 246, 0.08), transparent)',
-              borderLeft: '3px solid var(--primary)',
-              padding: '8px 12px',
-              borderRadius: '0 8px 8px 0',
-              borderTop: '1px solid rgba(255,255,255,0.03)',
-              borderRight: '1px solid rgba(255,255,255,0.03)',
-              borderBottom: '1px solid rgba(255,255,255,0.03)',
-              backdropFilter: 'blur(8px)',
-              visibility: (product.inventory_stocks && product.inventory_stocks.some(stock => stock.quantity > 0)) ? 'visible' : 'hidden'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                <div style={{ background: 'rgba(139, 92, 246, 0.15)', padding: '4px', borderRadius: '6px' }}>
-                  <Truck size={12} color="var(--primary)" />
-                </div>
-                Envío Estimado
-              </div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0', lineHeight: 1.3 }}>
-                {eta ? (
-                  <span className="text-gradient" style={{ fontWeight: 800 }}>{eta}</span>
-                ) : (
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'block' }}>Agrega tu CP para calcular</span>
-                )}
-              </div>
-            </div>
+
             
           </div>
         </div>

@@ -50,7 +50,6 @@ class BulkEtaRequest(BaseModel):
 async def get_bulk_etas(request: BulkEtaRequest, db: AsyncSession = Depends(get_db)):
     from app.models.product import Product
     from app.models.inventory import InventoryStock, Warehouse
-    from app.services.skydropx import SkydropxService
     from datetime import datetime, timedelta
     from sqlalchemy.orm import selectinload
     
@@ -61,7 +60,10 @@ async def get_bulk_etas(request: BulkEtaRequest, db: AsyncSession = Depends(get_
     result = await db.execute(query)
     products = result.scalars().all()
     
-    skydropx = SkydropxService()
+    # Lógica unificada para ETAs (Gamerloot 45403 por default, o la bodega si es única)
+    # Por simplificación en bulk, seguimos estimando basado en 45403 ya que el carrito 
+    # puede mezclar productos.
+    
     etas = {}
     
     for p in products:
@@ -80,8 +82,16 @@ async def get_bulk_etas(request: BulkEtaRequest, db: AsyncSession = Depends(get_
             if not stock.warehouse or not stock.warehouse.zip_code or stock.quantity <= 0:
                 continue
                 
-            eta_data = await skydropx.get_transit_time_cached(stock.warehouse.zip_code, request.destination_zip, extra_days=extra_days)
-            days = eta_data.get("days", 3)
+            origin_prefix = stock.warehouse.zip_code[:2] if stock.warehouse.zip_code else "06"
+            dest_prefix = request.destination_zip[:2]
+            if origin_prefix == dest_prefix:
+                base_days = 2
+            elif origin_prefix in ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16"] and dest_prefix in ["64", "44", "45", "66"]:
+                base_days = 3
+            else:
+                base_days = 4
+            
+            days = base_days + extra_days
             
             if days < best_days:
                 best_days = days

@@ -57,6 +57,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }: { isOpen
       isDropdown: true,
       subLinks: [
         { href: '/admin/sales/orders', icon: Package, label: 'Pedidos' },
+        { href: '/admin/sales/invoices', icon: FileText, label: 'Facturación' },
         { href: '/admin/sales/quotes', icon: FileText, label: 'Cotizar' },
         { href: '/admin/sales/reports', icon: Activity, label: 'Reporte de ventas' },
         { href: '/admin/sales/rma', icon: RotateCcw, label: 'RMA y Devoluciones' },

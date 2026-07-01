@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 class CategoryBase(BaseModel):
     name: str
@@ -14,7 +14,9 @@ class CategoryBase(BaseModel):
     is_featured: bool = False
     is_for_configurator: bool = False
     show_in_menu: bool = True
-    attribute_schema: Optional[list] = None
+    attribute_schema: Optional[Any] = None
+    keywords: Optional[List[str]] = None
+    sat_code: Optional[str] = None
 
 class CategoryCreate(CategoryBase):
     pass

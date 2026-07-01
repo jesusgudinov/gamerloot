@@ -270,7 +270,7 @@ export default function ConfiguratorPage() {
             const isSkipped = !isCompleted && currentStep > idx;
             const isActive = currentStep === idx;
             
-            let statusIcon = idx + 1;
+            let statusIcon: React.ReactNode = idx + 1;
             let statusColor = isActive ? 'var(--primary)' : 'var(--card-border)';
             if (isCompleted) {
               statusIcon = <CheckCircle2 size={16} />;

@@ -2,11 +2,12 @@ import type { NextConfig } from "next";
 
 const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline';
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com;
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: http://localhost:* http://127.0.0.1:*;
     font-src 'self';
-    connect-src 'self' http://127.0.0.1:* http://localhost:*;
+    connect-src 'self' http://127.0.0.1:* http://localhost:* https://api.stripe.com;
+    frame-src 'self' https://js.stripe.com https://hooks.stripe.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

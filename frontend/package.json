@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
+    "@stripe/react-stripe-js": "^6.6.0",
+    "@stripe/stripe-js": "^9.8.0",
     "@tiptap/extension-link": "^3.26.0",
     "@tiptap/pm": "^3.26.0",
     "@tiptap/react": "^3.26.0",

@@ -58,15 +58,19 @@ Al trabajar en los sistemas internos del catálogo (Scraping, Procesamiento, Im�
      - Si termina entre 0 y 4 (ej. `$554`), se redondea al `9` inferior (ej. `$549`).
      - Si termina entre 5 y 9 (ej. `$555`), se redondea al `9` superior (ej. `$559`).
 
-## Logística y Envíos Multi-Origen (Marketplace)
+5. **Códigos del SAT y Catálogos**: Las categorías en PostgreSQL (`categories`) DEBEN contener el campo `sat_code` con los códigos de producto/servicio reales del catálogo oficial del SAT. Nunca asumas códigos al azar y nunca envíes un 'SN' al tratar con APIs de paqueterías (ej. Mienvío), de lo contrario la integración logística rebotará los JSON con errores 422 de "Invalid payload".
 
-Al trabajar con el checkout y las cotizaciones de envío (vía Skydropx), se debe seguir la siguiente arquitectura de "Envío Unificado":
+## Logística y Envíos (Skydropx y Origen Unificado)
 
-1. **Cotización Paralela por Origen**: Nunca se asume que todo sale de una sola bodega. El carrito debe dividirse agrupando los productos por el `zip_code` de la bodega (`Warehouse`) donde tengan stock (`InventoryStock`).
-2. **Cajas Virtuales**: Los productos que salen del mismo almacén deben empaquetarse en una "caja virtual" (sumando pesos y maximizando/sumando dimensiones) mediante la función `calculate_virtual_parcel` en `packaging.py`, para evitar que la API de Skydropx cobre envíos individuales redundantes.
-3. **API V2 Skydropx**: Se utiliza obligatoriamente la API V2 (`/v2/quotations`) de Skydropx. Se realizan peticiones asíncronas en paralelo (`asyncio.gather`) para cotizar cada ruta de origen.
-4. **Tarifa Unificada (Loot Unificado)**: El usuario nunca debe ver 3 o 4 selecciones de paquetería separadas para una sola compra. El backend (`checkout.py`) debe sumar el costo de la ruta más barata de cada origen para crear una tarifa consolidada "Estándar", y la ruta más rápida para una tarifa consolidada "Express".
-5. **Transparencia (Breakdown)**: Aunque el usuario paga una tarifa unificada, la respuesta debe contener un arreglo de `breakdown` que indique desde dónde viaja cada paquete y su ETA individual, para mostrarlo en el Checkout al estilo Amazon.
+Al trabajar con el checkout y las cotizaciones de envío, se debe usar **Skydropx API V2** de forma exclusiva. Sigue esta lógica de "Envío Unificado":
+
+1. **Evaluación de Origen**: Se debe revisar de qué bodega (`Warehouse`) sale cada producto en el carrito.
+2. **Regla de Cotización**: 
+   - Si **TODOS** los productos del carrito provienen de la **misma bodega**, se cotiza el envío asumiendo ese Código Postal como origen.
+   - Si los productos provienen de **bodegas diferentes** (múltiples orígenes), se agrupan en una sola "caja virtual" (sumando pesos y maximizando/sumando dimensiones) y se cotiza el envío **ASUMIENDO QUE SALEN DE LA BODEGA GAMERLOOT (45403)**. Esto evita cobrarle al cliente envíos redundantes.
+3. **API V2 Skydropx**: Se utiliza obligatoriamente la API V2 (`/v2/quotations`) de Skydropx.
+4. **Tarifa Consolidada**: El usuario solo verá 2 opciones: "Estándar" (la más barata) y "Express" (la más rápida).
+5. **Trazabilidad Interna**: Aunque el envío se genere consolidado desde Gamerloot hacia el cliente final, internamente (`Order.items` y correos administrativos) DEBES preservar el origen real de cada pieza para que Compras sepa a qué proveedor solicitarlas.
 
 ## Interacciones y Contenido Generado por el Usuario (Reseñas y Q&A)
 
@@ -122,3 +126,35 @@ Para los agentes encargados de purgar código, eliminar archivos de prueba y lim
 - `AGENTS.md`: ¡Este archivo! Es el cerebro de las reglas de los agentes. NUNCA lo elimines.
 
 **Regla de Oro para el Agente de Limpieza:** Si tienes duda sobre un archivo en los directorios `app/` o `src/`, asume que es vital y PREGUNTA al usuario antes de ejecutar un comando `rm`. Nunca uses comandos de borrado masivo (`rm -rf *`) sin filtros estrictos.
+
+## Arquitectura de Pagos (Stripe) y Webhooks
+
+El sistema de Gamer Loot utiliza Stripe como pasarela principal para procesar pagos seguros y guardar métodos de pago para futuras compras (Bóveda de Tarjetas Segura). Todos los agentes deben seguir estas directrices al modificar o depurar el flujo de pagos:
+
+1. **Flujo de Pago Asíncrono (PaymentIntents)**: El backend de FastAPI NUNCA procesa números de tarjetas directamente. El flujo siempre debe ser:
+   - Frontend solicita crear una orden en `/place-order`.
+   - Backend llama a `StripeService.create_payment_intent()` generando un `client_secret`.
+   - Backend inyecta el `order_id` y `user_email` en la propiedad `metadata` del PaymentIntent.
+   - Frontend usa el `client_secret` para montar el `<Elements>` de Stripe y capturar el pago.
+
+2. **Webhooks como Única Fuente de Verdad**: El cambio de estado de una orden a "Pagado" o "Pago Declinado" DEBE hacerse EXCLUSIVAMENTE a través del endpoint `/api/v1/stripe/webhook`, nunca de manera síncrona en el frontend.
+   - Si el webhook recibe `payment_intent.succeeded`, cambia el estado a `"Pagado"`.
+   - Si recibe `payment_intent.payment_failed`, cambia el estado a `"Pago Declinado"` y almacena el motivo de rechazo en la columna `rejection_reason` de la base de datos leyendo la propiedad `event["data"]["object"]["last_payment_error"]["message"]`.
+
+3. **Cálculo de Utilidad (Dropshipping)**: Debido a nuestro modelo de dropshipping, las consultas SQL de métricas (`get_sales_stats`) NUNCA deben usar directamente el total de ventas (`Order.total`) para calcular la Utilidad. Siempre se debe calcular a través de un `JOIN` asegurando restar el costo: `func.sum(OrderItem.total_price) - func.sum(OrderItem.total_cost)`. Esto previene duplicaciones por JOINs de múltiples productos.
+
+4. **Entorno Local vs. Producción (Migración)**:
+   - **Local**: Stripe no puede enviar webhooks a `http://localhost`. Para depurar pagos en tiempo real en desarrollo, es OBLIGATORIO correr el CLI de Stripe para hacer un túnel seguro (ej. `stripe listen --forward-to localhost:8000/api/v1/stripe/webhook`).
+   - **Producción**: Al migrar a producción (`api.gamerloot.com.mx`), el webhook debe registrarse en el Dashboard de Stripe usando los eventos obligatorios: `payment_intent.succeeded` y `payment_intent.payment_failed` (y opcionalmente los de `customer.*` y `setup_intent.*` para la bóveda de tarjetas). Reemplaza siempre el `STRIPE_WEBHOOK_SECRET` de producción en el `.env` tras generar el endpoint.
+
+## Arquitectura de Logística (Skydropx V2) y Webhooks
+
+El sistema utiliza la API de Skydropx V2 para calcular cotizaciones síncronas, generar guías y rastrear envíos de manera automatizada. Al modificar la lógica de envíos, los agentes deben apegarse estrictamente a lo siguiente:
+
+1. **Cotización Síncrona Consolidada**: La API de Skydropx permite realizar cotizaciones (`/v2/quotations`). El sistema debe consolidar las cotizaciones en una tarifa "Estándar" y otra "Express".
+2. **Generación de Envíos (Shipments)**: El endpoint para generar la guía (`POST /v2/shipments`) usará la dirección de la bodega correspondiente o la dirección 45403 en caso de envíos múltiples consolidados.
+3. **Webhooks de Rastreo (Skydropx)**: El backend escucha actualizaciones de estado en `/api/v1/webhooks/skydropx`. 
+   - El webhook valida un token de seguridad: `lmfub4jzpMhkIgEWt7_XH_tcbo3ckRhhsFQhNgleyDk` (nombre `gamerloot_webhook`).
+   - El webhook mapea los eventos (`created`, `transit`, `delivered`) para actualizar la columna `status` y el `label_url` de la tabla `Order` (y dentro del arreglo `shipments_data` JSONB).
+4. **URL de Webhook en Producción**: Al migrar a producción o utilizar el entorno real, la URL a configurar en Skydropx es `https://api.gamerloot.com.mx/api/v1/webhooks/skydropx`.
+5. **Notificaciones a Proveedores**: Al confirmar el pago, el sistema de Fulfillment genera la guía de envío para el cliente final y usa `EmailService.send_admin_supplier_email` para notificar al admin. El administrador será el responsable de solicitar la mercancía a los proveedores originales basándose en la metadata interna de la orden.

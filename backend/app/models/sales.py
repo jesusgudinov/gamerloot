@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB
 
 # Reutilizamos la base central de la BD
 from app.models.user import Base
@@ -34,7 +35,9 @@ class Order(Base):
     carrier = Column(String, nullable=True)
     tracking_number = Column(String, nullable=True)
     shipping_label_url = Column(String, nullable=True)
+    shipments_data = Column(JSONB, default=list, nullable=True)
     customer_notes = Column(Text, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
     
     # Finanzas
     subtotal = Column(Float, default=0.0)
@@ -50,6 +53,7 @@ class Order(Base):
     valid_until = Column(DateTime(timezone=True), nullable=True) # Útil para cotizaciones
     
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    invoice = relationship("Invoice", back_populates="order", uselist=False, cascade="all, delete-orphan")
 
 class OrderItem(Base):
     __tablename__ = "sales_order_items"
@@ -64,6 +68,10 @@ class OrderItem(Base):
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Float, nullable=False)
     total_price = Column(Float, nullable=False)
+    
+    # Costo congelado al momento de la venta
+    unit_cost = Column(Float, nullable=True, default=0.0)
+    total_cost = Column(Float, nullable=True, default=0.0)
     
     order = relationship("Order", back_populates="items")
     product = relationship("Product")
@@ -99,3 +107,28 @@ class RMAItem(Base):
     
     rma = relationship("RMARequest", back_populates="items")
     order_item = relationship("OrderItem")
+
+class Invoice(Base):
+    __tablename__ = "sales_invoices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("sales_orders.id"), unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Snapshot de datos fiscales
+    rfc = Column(String, nullable=False)
+    business_name = Column(String, nullable=False)
+    tax_regime = Column(String, nullable=False)
+    cfdi_use = Column(String, nullable=False)
+    zip_code = Column(String, nullable=False)
+    
+    # Pendiente, Facturado, Cancelada
+    status = Column(String, default="Pendiente", index=True) 
+    
+    xml_url = Column(String, nullable=True)
+    pdf_url = Column(String, nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    order = relationship("Order", back_populates="invoice")

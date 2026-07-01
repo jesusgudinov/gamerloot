@@ -420,7 +420,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
 
             {/* Bodega Tags */}
             {product.inventory_stocks && product.inventory_stocks.filter((s: any) => s.quantity > 0 && s.warehouse).length > 0 && (
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '30px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '15px', flexWrap: 'wrap' }}>
                 {Array.from(new Set(
                   product.inventory_stocks
                     .filter((s: any) => s.quantity > 0 && s.warehouse)

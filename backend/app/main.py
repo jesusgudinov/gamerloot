@@ -49,7 +49,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
-from app.routers import auth, products, sync, catalog, marketing, sales, clients, shipping, roles, users, storefront, checkout, mapping, interactions, addresses, rma, configurator, uploads, support
+from app.routers import auth, products, sync, catalog, marketing, sales, clients, shipping, roles, users, storefront, checkout, mapping, interactions, addresses, rma, configurator, uploads, support, invoices
 
 from app.api.deps import get_current_active_user, require_permissions
 from fastapi import Depends
@@ -68,11 +68,15 @@ app.include_router(roles.router, prefix="/api/v1/roles", tags=["Seguridad y Role
 app.include_router(users.router, prefix="/api/v1/users", tags=["Usuarios y Equipo"])
 app.include_router(storefront.router, prefix="/api/v1/storefront", tags=["Tienda Pública"])
 app.include_router(checkout.router, prefix="/api/v1/checkout", tags=["Checkout"])
+app.include_router(invoices.router, prefix="/api/v1/invoices", tags=["Facturación"])
 app.include_router(configurator.router, prefix="/api/v1/configurator", tags=["Configurador de PC"])
 app.include_router(mapping.router, prefix="/api/v1/mapping", tags=["Mapeo de Taxonomías"], dependencies=[Depends(require_permissions(["manage_catalog"]))])
 app.include_router(interactions.router, prefix="/api/v1/interactions", tags=["Reseñas y Q&A"])
 app.include_router(support.router, prefix="/api/v1/support", tags=["Soporte y Tickets"])
 app.include_router(uploads.router, prefix="/api/v1/uploads", tags=["Archivos y Bucket"])
+
+from app.routers import webhooks
+app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
 
 # Servir archivos estáticos del bucket local
 os.makedirs("uploads/images", exist_ok=True)

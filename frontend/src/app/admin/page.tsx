@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { 
   TrendingUp, Package, Users, AlertTriangle, Target, 
-  PlusCircle, Megaphone, ShoppingCart, ArrowRight 
+  PlusCircle, Megaphone, ShoppingCart, ArrowRight, DollarSign,
+  Building2, User 
 } from 'lucide-react';
 import Link from 'next/link';
 import { 
@@ -69,8 +70,13 @@ export default function AdminDashboard() {
 
   // Si no hay datos, mostramos 0 para evitar errores de render
   const rev = salesStats?.total_revenue || 0;
+  const profit = salesStats?.total_profit || 0;
   const pending = salesStats?.pending_orders || 0;
   const lowStock = productStats?.low_stock || 0;
+  
+  const gl_profit = profit * 0.50;
+  const socio_profit = profit * 0.25;
+  const jesus_profit = profit * 0.25;
   
   // Transform real data for chart
   const realChartData = salesStats?.chart_data?.map((item: any) => {
@@ -129,6 +135,41 @@ export default function AdminDashboard() {
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Ingresos Totales</p>
             <h2 style={{ fontSize: '2rem' }}>${rev.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h2>
+          </div>
+        </div>
+
+        {/* Profit Card */}
+        <div className="glass-panel hover-card animate-fade-in-up delay-150" style={{ padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%)', filter: 'blur(20px)', pointerEvents: 'none', zIndex: 0 }}></div>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <div style={{ padding: '10px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px' }}>
+                <DollarSign size={24} color="#10b981" />
+              </div>
+            </div>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Utilidad Total</p>
+            <h2 style={{ fontSize: '2rem', color: '#10b981' }}>${profit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h2>
+            
+            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Building2 size={14} /> Gamer Loot
+                </span>
+                <span style={{ fontWeight: 600 }}>${gl_profit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <User size={14} /> Oscar
+                </span>
+                <span style={{ fontWeight: 600 }}>${socio_profit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <User size={14} /> Jesús
+                </span>
+                <span style={{ fontWeight: 600 }}>${jesus_profit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
           </div>
         </div>
         

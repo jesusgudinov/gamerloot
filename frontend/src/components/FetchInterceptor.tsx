@@ -15,14 +15,16 @@ export default function FetchInterceptor() {
         
         // Solo interceptamos llamadas a nuestra API local/backend
         if (typeof resource === 'string' && (resource.includes('localhost:8000') || resource.includes('/api/v1'))) {
+          // Fix IPv6 connection refused issues by forcing IPv4 loopback
+          resource = resource.replace('localhost:8000', '127.0.0.1:8000');
+          
           config = config || {};
           config.credentials = 'include';
           
           const context = window.location.pathname.startsWith('/admin') ? 'admin' : 'client';
-          config.headers = {
-            ...config.headers,
-            'X-App-Context': context
-          };
+          const newHeaders = new Headers(config.headers);
+          newHeaders.set('X-App-Context', context);
+          config.headers = newHeaders;
         }
         
         return originalFetch(resource, config);

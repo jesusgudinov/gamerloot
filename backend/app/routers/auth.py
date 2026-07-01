@@ -252,6 +252,22 @@ async def mfa_enable(data: MFAEnable, current_user: User = Depends(get_current_u
     else:
         raise HTTPException(status_code=400, detail="Código inválido")
 
+@router.post("/mfa/disable")
+async def mfa_disable(data: MFAEnable, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if not current_user.mfa_enabled:
+        raise HTTPException(status_code=400, detail="MFA no está activado")
+    if not current_user.mfa_secret:
+        raise HTTPException(status_code=400, detail="No se ha configurado el secreto MFA")
+        
+    totp = pyotp.TOTP(current_user.mfa_secret)
+    if totp.verify(data.code):
+        current_user.mfa_enabled = False
+        current_user.mfa_secret = None
+        await db.commit()
+        return {"message": "MFA desactivado con éxito"}
+    else:
+        raise HTTPException(status_code=400, detail="Código inválido")
+
 @router.post("/mfa/verify")
 async def mfa_verify(data: MFAVerify, response: Response, db: AsyncSession = Depends(get_db)):
     try:

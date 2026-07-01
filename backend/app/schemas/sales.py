@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
 from datetime import datetime
 
 class OrderItemBase(BaseModel):
@@ -78,6 +78,7 @@ class OrderResponse(OrderBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     items: List[OrderItemResponse]
+    invoice: Optional[Any] = None
 
     class Config:
         from_attributes = True
