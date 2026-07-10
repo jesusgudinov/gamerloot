@@ -24,6 +24,13 @@ export default function FetchInterceptor() {
           const context = window.location.pathname.startsWith('/admin') ? 'admin' : 'client';
           const newHeaders = new Headers(config.headers);
           newHeaders.set('X-App-Context', context);
+          
+          // Respaldo de seguridad: si las cookies fallan en dev, inyectar el token desde localStorage
+          const localToken = context === 'admin' ? localStorage.getItem('admin_token') : localStorage.getItem('client_token');
+          if (localToken) {
+            newHeaders.set('Authorization', `Bearer ${localToken}`);
+          }
+          
           config.headers = newHeaders;
         }
         

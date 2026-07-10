@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Package, CreditCard, Building2, CircleDollarSign, 
-  CheckCircle2, Clock, Truck, Hammer, ShieldCheck, Copy, ChevronRight 
+  CheckCircle2, Clock, Truck, Hammer, ShieldCheck, Copy, ChevronRight, FileText 
 } from 'lucide-react';
 import Link from 'next/link';
+import StripeProvider from '@/components/checkout/StripeProvider';
+import OrderPaymentStripe from '@/components/orders/OrderPaymentStripe';
 
 interface OrderItem {
   id: int;
@@ -53,6 +55,13 @@ export default function OrderDetailsPage() {
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   
+  // New Payment State
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+  const [loadingStripe, setLoadingStripe] = useState(false);
+  const [speiFile, setSpeiFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState('');
+  
   // Invoice State
   const [requestingInvoice, setRequestingInvoice] = useState(false);
   const [invoiceError, setInvoiceError] = useState('');
@@ -79,6 +88,56 @@ export default function OrderDetailsPage() {
       fetchOrder();
     }
   }, [params.folio]);
+
+  const handleSelectStripe = async () => {
+    setSelectedPayment('stripe');
+    if (!stripeClientSecret && order?.status === 'Pendiente') {
+      setLoadingStripe(true);
+      try {
+        const res = await fetch(`http://localhost:8000/api/v1/sales/my-orders/${order.folio}/pay-stripe`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStripeClientSecret(data.client_secret);
+        } else {
+          alert('Error al generar el pago con Stripe');
+        }
+      } catch (e) {
+        alert('Error de red al contactar Stripe');
+      } finally {
+        setLoadingStripe(false);
+      }
+    }
+  };
+
+  const handleSPEIUpload = async () => {
+    if (!speiFile || !order) return;
+    setIsUploading(true);
+    setUploadMessage('');
+    const formData = new FormData();
+    formData.append('file', speiFile);
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/sales/my-orders/${order.folio}/upload-receipt`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+      if (res.ok) {
+        setUploadMessage('¡Comprobante subido con éxito! Refrescando...');
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        const err = await res.json();
+        setUploadMessage(err.detail || 'Error al subir el comprobante.');
+      }
+    } catch (e) {
+      setUploadMessage('Error de red.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleRequestInvoice = async () => {
     if (!order) return;
@@ -265,14 +324,19 @@ export default function OrderDetailsPage() {
             </div>
 
             {/* Stripe */}
-            <div style={{ padding: '20px', borderRadius: '16px', border: '1px solid var(--card-border)', background: 'rgba(255,255,255,0.01)', opacity: 0.6, position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,255,255,0.1)', fontSize: '0.7rem', padding: '4px 8px', borderRadius: '20px', fontWeight: 600 }}>Próximamente</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ background: '#635BFF', color: '#fff', padding: '8px', borderRadius: '8px' }}><CreditCard size={24} /></div>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Tarjeta Crédito/Débito</h4>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Vía Stripe</p>
-                </div>
+            <div 
+              className="hover-card"
+              onClick={handleSelectStripe}
+              style={{ 
+                padding: '20px', borderRadius: '16px', cursor: 'pointer', border: selectedPayment === 'stripe' ? '2px solid var(--primary)' : '1px solid var(--card-border)',
+                background: selectedPayment === 'stripe' ? 'rgba(139, 92, 246, 0.05)' : 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', gap: '16px',
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ background: '#635BFF', color: '#fff', padding: '8px', borderRadius: '8px' }}><CreditCard size={24} /></div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Tarjeta Crédito/Débito</h4>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Vía Stripe</p>
               </div>
             </div>
 
@@ -343,9 +407,33 @@ export default function OrderDetailsPage() {
               {copied && <p style={{ color: '#10b981', fontSize: '0.9rem', marginTop: '-10px', marginBottom: '20px', fontWeight: 600 }}>¡Copiado al portapapeles!</p>}
 
               <div style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.1)', border: '1px dashed #10b981', borderRadius: '12px', color: '#34d399', fontSize: '0.9rem' }}>
-                <strong style={{ display: 'block', marginBottom: '8px' }}>Paso Final:</strong>
-                Una vez realizada la transferencia, envía el comprobante de pago al correo <strong>pagos@gamerloot.com.mx</strong> o a nuestro WhatsApp oficial, mencionando tu número de pedido ({order.folio}). Procesaremos tu pedido en menos de 24 horas hábiles.
+                <strong style={{ display: 'block', marginBottom: '8px' }}>Paso Final - Sube tu comprobante de pago:</strong>
+                <p style={{ margin: '0 0 12px 0' }}>Una vez realizada la transferencia, sube aquí tu comprobante (captura o PDF) para que procesemos tu pedido.</p>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
+                  <input type="file" onChange={(e) => setSpeiFile(e.target.files?.[0] || null)} style={{ color: 'var(--foreground)' }} />
+                  <button onClick={handleSPEIUpload} disabled={!speiFile || isUploading} className="hover-card" style={{ background: '#10b981', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: (!speiFile || isUploading) ? 'not-allowed' : 'pointer', fontWeight: 700, opacity: (!speiFile || isUploading) ? 0.6 : 1 }}>
+                    {isUploading ? 'Subiendo...' : 'Enviar Comprobante'}
+                  </button>
+                </div>
+                {uploadMessage && <p style={{ marginTop: '10px', color: '#fff', fontWeight: 600 }}>{uploadMessage}</p>}
               </div>
+            </div>
+          )}
+
+          {/* Stripe Form Render */}
+          {selectedPayment === 'stripe' && (
+            <div style={{ background: 'var(--input-bg)', borderRadius: '16px', padding: '24px', border: '1px solid var(--card-border)', animation: 'fadeIn 0.3s ease', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)' }}>
+              {loadingStripe ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)', fontWeight: 600 }}>
+                  Cargando pasarela segura...
+                </div>
+              ) : stripeClientSecret ? (
+                <StripeProvider clientSecret={stripeClientSecret}>
+                  <OrderPaymentStripe folio={order.folio} />
+                </StripeProvider>
+              ) : (
+                <p style={{ color: '#ef4444' }}>No se pudo cargar la pasarela de pagos.</p>
+              )}
             </div>
           )}
         </div>

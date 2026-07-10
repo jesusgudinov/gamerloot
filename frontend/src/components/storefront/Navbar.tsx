@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import DynamicIcon from '@/components/ui/DynamicIcon';
 import MegaMenu from './navigation/MegaMenu';
 import MobileMenuDrawer from './navigation/MobileMenuDrawer';
+import LogoSVG from './LogoSVG';
 
 interface StoreCategory {
   id: number;
@@ -85,6 +86,7 @@ export default function Navbar() {
   const [categories, setCategories] = useState<StoreCategory[]>([]);
   const [activeMegaMenu, setActiveMegaMenu] = useState<StoreCategory | null>(null);
   const [activePointerX, setActivePointerX] = useState<number>(0);
+  const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showScrollArrows, setShowScrollArrows] = useState({ left: false, right: false });
   
@@ -135,6 +137,9 @@ export default function Navbar() {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSearchDropdown(false);
       }
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setActiveMegaMenu(null);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -179,7 +184,6 @@ export default function Navbar() {
     <>
       <nav 
         ref={navRef}
-        onMouseLeave={() => setActiveMegaMenu(null)}
         style={{ 
           display: 'flex', flexDirection: 'column', 
           background: 'var(--background)', position: 'sticky', top: 0, zIndex: 100,
@@ -202,8 +206,9 @@ export default function Navbar() {
             </button>
 
             {/* Logo */}
-            <Link href="/" style={{ textDecoration: 'none', marginRight: '10px' }}>
-              <h1 className="text-gradient" style={{ fontSize: '1.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.5px' }}>
+            <Link href="/" style={{ textDecoration: 'none', marginRight: '10px', display: 'flex', alignItems: 'center' }}>
+              <LogoSVG width={45} height={45} className="logo-svg" color="var(--primary)" />
+              <h1 className="text-gradient hide-on-mobile" style={{ fontSize: '1.5rem', fontWeight: 900, margin: '0 0 0 10px', letterSpacing: '-0.5px' }}>
                 GAMER LOOT
               </h1>
             </Link>
@@ -373,21 +378,35 @@ export default function Navbar() {
               {parentCategories.map((cat) => (
                 <div 
                   key={cat.id}
-                  onMouseEnter={(e) => {
-                    setActiveMegaMenu(cat);
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setActivePointerX(rect.left + rect.width / 2);
+                  onClick={(e) => {
+                    if (activeMegaMenu?.id === cat.id) {
+                      setActiveMegaMenu(null);
+                    } else {
+                      setActiveMegaMenu(cat);
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setActivePointerX(rect.left + rect.width / 2);
+                    }
                   }}
+                  onMouseEnter={() => setHoveredCategory(cat.id)}
+                  onMouseLeave={() => setHoveredCategory(null)}
                   style={{ 
-                    padding: '16px 12px', 
+                    padding: '8px 16px', 
                     cursor: 'pointer', 
                     whiteSpace: 'nowrap',
                     color: activeMegaMenu?.id === cat.id ? 'var(--primary)' : 'var(--foreground)',
                     fontWeight: activeMegaMenu?.id === cat.id ? 800 : 600,
                     fontSize: '0.95rem',
                     display: 'flex', alignItems: 'center', gap: '8px',
-                    borderBottom: activeMegaMenu?.id === cat.id ? '2px solid var(--primary)' : '2px solid transparent',
-                    transition: 'all 0.2s ease'
+                    background: activeMegaMenu?.id === cat.id 
+                      ? 'rgba(139, 92, 246, 0.15)' 
+                      : hoveredCategory === cat.id ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                    backdropFilter: (activeMegaMenu?.id === cat.id || hoveredCategory === cat.id) ? 'blur(12px)' : 'none',
+                    border: activeMegaMenu?.id === cat.id 
+                      ? '1px solid rgba(139, 92, 246, 0.2)' 
+                      : hoveredCategory === cat.id ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid transparent',
+                    borderRadius: '12px',
+                    transition: 'all 0.2s ease',
+                    margin: '8px 0'
                   }}
                 >
                   {cat.icon && (
@@ -410,41 +429,10 @@ export default function Navbar() {
           </div>
         </div>
         <div className="hide-on-mobile">
-          {activeMegaMenu && activePointerX > 0 && (
-            <>
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                left: activePointerX,
-                transform: 'translateX(-50%)',
-                width: 0,
-                height: 0,
-                borderLeft: '12px solid transparent',
-                borderRight: '12px solid transparent',
-                borderBottom: '12px solid var(--card-border)',
-                zIndex: 91,
-                animation: 'fadeIn 0.2s ease-out forwards'
-              }} />
-              <div style={{
-                position: 'absolute',
-                top: 'calc(100% + 1px)',
-                left: activePointerX,
-                transform: 'translateX(-50%)',
-                width: 0,
-                height: 0,
-                borderLeft: '12px solid transparent',
-                borderRight: '12px solid transparent',
-                borderBottom: '12px solid var(--card-bg)',
-                zIndex: 92,
-                animation: 'fadeIn 0.2s ease-out forwards'
-              }} />
-            </>
-          )}
+
           <MegaMenu 
             activeCategory={activeMegaMenu} 
             subcategories={activeMegaMenu ? getSubcategories(activeMegaMenu.id) : []}
-            onMouseLeave={() => setActiveMegaMenu(null)}
-            onMouseEnter={() => {}}
             pointerX={activePointerX}
           />
         </div>

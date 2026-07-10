@@ -41,9 +41,9 @@ export default function MappingPage() {
   const fetchData = async () => {
     try {
       const [resUnmapped, resCats, resMaps] = await Promise.all([
-        fetch('http://localhost:8000/api/v1/mapping/unmapped', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('http://localhost:8000/api/v1/catalog/categories', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('http://localhost:8000/api/v1/mapping/maps', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch('http://localhost:8000/api/v1/mapping/unmapped'),
+        fetch('http://localhost:8000/api/v1/catalog/categories'),
+        fetch('http://localhost:8000/api/v1/mapping/maps')
       ]);
       const dataUnmapped = await resUnmapped.json();
       const dataCats = await resCats.json();

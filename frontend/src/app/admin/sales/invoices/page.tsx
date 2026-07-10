@@ -150,17 +150,31 @@ export default function InvoicesPage() {
                       )}
                     </td>
                     <td style={{ padding: '16px', textAlign: 'right' }}>
-                      {inv.status === 'Pendiente' ? (
-                        <button 
-                          onClick={() => setUploadingInvoice(inv)}
-                          className="hover-card"
-                          style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--primary)', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600 }}
-                        >
-                          <Upload size={16} /> Subir Archivos
-                        </button>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Completado</span>
-                      )}
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        {inv.constancia_pdf_url && (
+                          <a 
+                            href={`http://localhost:8000${inv.constancia_pdf_url}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="hover-card"
+                            style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}
+                            title="Ver Constancia Fiscal"
+                          >
+                            <FileText size={16} /> Constancia
+                          </a>
+                        )}
+                        {inv.status === 'Pendiente' ? (
+                          <button 
+                            onClick={() => setUploadingInvoice(inv)}
+                            className="hover-card"
+                            style={{ background: 'rgba(139, 92, 246, 0.1)', color: 'var(--primary)', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600 }}
+                          >
+                            <Upload size={16} /> Subir Archivos
+                          </button>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Completado</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

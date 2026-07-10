@@ -60,9 +60,50 @@ class StripeService:
                 customer=customer_id,
                 type="card",
             )
-            return methods.data
+            result = []
+            for m in methods.data:
+                if m.card:
+                    result.append({
+                        "id": m.id,
+                        "card": {
+                            "brand": m.card.brand,
+                            "last4": m.card.last4,
+                            "exp_month": m.card.exp_month,
+                            "exp_year": m.card.exp_year
+                        }
+                    })
+            return result
         except stripe.error.StripeError:
             return []
+
+    @staticmethod
+    def create_setup_intent(customer_id: str) -> dict:
+        """
+        Crea un SetupIntent para recopilar de forma segura un nuevo método de pago
+        sin realizar ningún cargo.
+        """
+        try:
+            intent = stripe.SetupIntent.create(
+                customer=customer_id,
+                usage="off_session",
+                automatic_payment_methods={"enabled": True},
+            )
+            return {"client_secret": intent.client_secret, "id": intent.id}
+        except stripe.error.StripeError as e:
+            print(f"Stripe Error: {e}")
+            return {"error": str(e)}
+
+    @staticmethod
+    def detach_payment_method(payment_method_id: str) -> bool:
+        """
+        Desvincula un método de pago del Customer.
+        """
+        try:
+            stripe.PaymentMethod.detach(payment_method_id)
+            return True
+        except stripe.error.StripeError as e:
+            print(f"Stripe Error: {e}")
+            return False
 
     @staticmethod
     def construct_webhook_event(payload: bytes, sig_header: str) -> stripe.Event:

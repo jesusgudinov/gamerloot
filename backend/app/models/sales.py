@@ -38,6 +38,7 @@ class Order(Base):
     shipments_data = Column(JSONB, default=list, nullable=True)
     customer_notes = Column(Text, nullable=True)
     rejection_reason = Column(Text, nullable=True)
+    receipt_url = Column(String, nullable=True)
     
     # Finanzas
     subtotal = Column(Float, default=0.0)

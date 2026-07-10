@@ -7,6 +7,7 @@ import { useTheme } from 'next-themes';
 import { useAuth } from '@/context/AuthContext';
 import { getImageUrl } from '@/utils/imageUrl';
 import DynamicIcon from '@/components/ui/DynamicIcon';
+import LogoSVG from '@/components/storefront/LogoSVG';
 
 interface StoreCategory {
   id: number;
@@ -79,7 +80,10 @@ export default function MobileMenuDrawer({ isOpen, onClose, parents, getChildren
         
         {/* Header */}
         <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--card-border)' }}>
-          <h2 className="text-gradient" style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0 }}>GAMER LOOT</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <LogoSVG width={32} height={32} color="var(--primary)" />
+            <h2 className="text-gradient" style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0 }}>GAMER LOOT</h2>
+          </div>
           <button onClick={onClose} style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '50%', padding: '8px', color: 'var(--foreground)', cursor: 'pointer', display: 'flex' }}>
             <X size={20} />
           </button>

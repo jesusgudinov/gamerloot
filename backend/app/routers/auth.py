@@ -89,6 +89,7 @@ async def login(request: Request, response: Response, admin: bool = False, form_
         httponly=True,
         max_age=28800, # 8 horas a petición del dueño
         expires=28800,
+        path="/",
         samesite="lax",
         secure=settings.ENVIRONMENT == "production", # Usar True solo en prod
     )
@@ -296,6 +297,7 @@ async def mfa_verify(data: MFAVerify, response: Response, db: AsyncSession = Dep
         httponly=True,
         max_age=28800,
         expires=28800,
+        path="/",
         samesite="lax",
         secure=settings.ENVIRONMENT == "production",
     )

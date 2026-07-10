@@ -49,8 +49,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const isAdminContext = window.location.pathname.startsWith('/admin');
         const contextParam = isAdminContext ? 'admin' : 'client';
+        const localToken = localStorage.getItem('client_token') || localStorage.getItem('admin_token');
+        const headers: HeadersInit = {};
+        if (localToken) {
+          headers['Authorization'] = `Bearer ${localToken}`;
+        }
         
         const meRes = await fetch(`http://localhost:8000/api/v1/auth/me?context=${contextParam}`, {
+          headers,
           credentials: 'include'
         });
         
@@ -81,7 +87,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const login = (newToken: string, userData: User) => {
-    // Ya no guardamos el token en localStorage porque está en una cookie HttpOnly
+    // Respaldo del token en localStorage para evitar problemas de SameSite de cookies en dev
+    const isAdminContext = window.location.pathname.startsWith('/admin');
+    if (isAdminContext) {
+      localStorage.setItem('admin_token', newToken);
+    } else {
+      localStorage.setItem('client_token', newToken);
+    }
     setToken(newToken);
     setUser(userData);
   };
@@ -100,6 +112,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (e) {
       console.error("Error al cerrar sesión", e);
     }
+    localStorage.removeItem('client_token');
+    localStorage.removeItem('admin_token');
     setToken(null);
     setUser(null);
     

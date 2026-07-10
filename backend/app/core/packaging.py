@@ -2,8 +2,8 @@ from typing import List, Dict, Any
 
 def calculate_virtual_parcel(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Consolida una lista de items de un carrito (u orden) en un solo paquete virtual
-    para enviarlo a Mienvio.
+    Agrupa las dimensiones y pesos de múltiples items en un solo paquete virtual
+    para enviarlo a Skydropx.
     
     Cada item debe ser un diccionario con al menos:
     - weight_kg: float
@@ -32,7 +32,7 @@ def calculate_virtual_parcel(items: List[Dict[str, Any]]) -> Dict[str, Any]:
         if wi > max_width:
             max_width = wi
 
-    # Prevención de valores nulos o 0 para Mienvio
+    # Prevención de valores nulos o 0
     return {
         "weight": round(max(total_weight, 1.0), 2),
         "distance_unit": "CM",

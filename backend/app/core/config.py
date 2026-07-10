@@ -38,11 +38,9 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
 
-    # Mienvio Config
-    MIENVIO_API_KEY: str = ""
-
     # Skydropx Config
     SKYDROPX_API_KEY: str = ""
+    SKYDROPX_API_SECRET: str = ""
 
     # SMTP Config
     SMTP_HOST: str = ""

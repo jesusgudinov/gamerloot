@@ -8,6 +8,7 @@ class BillingProfileBase(BaseModel):
     tax_regime: str
     cfdi_use: str
     zip_code: str
+    constancia_pdf_url: Optional[str] = None
 
 class BillingProfileCreate(BillingProfileBase):
     pass

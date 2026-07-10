@@ -33,7 +33,7 @@ export default function ProfileSidebar() {
       }}>
         
         {/* User Profile Summary */}
-        <div style={{ textAlign: 'center', marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid var(--card-border)' }}>
           <div style={{ position: 'relative', width: '90px', height: '90px', margin: '0 auto 16px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), #3b82f6)', padding: '3px', boxShadow: '0 0 20px rgba(139, 92, 246, 0.4)' }}>
             <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'var(--background)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {user.profile_picture_url ? (
@@ -98,9 +98,9 @@ export default function ProfileSidebar() {
                     width: '44px',
                     height: '44px',
                     borderRadius: '14px', 
-                    background: isActive ? '#2b1654' : 'rgba(255, 255, 255, 0.04)',
+                    background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'var(--input-bg)',
                     border: isActive ? '1px solid rgba(139, 92, 246, 0.2)' : '1px solid transparent',
-                    color: isActive ? '#a78bfa' : 'inherit',
+                    color: isActive ? 'var(--primary)' : 'inherit',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0
                   }}>
@@ -114,7 +114,7 @@ export default function ProfileSidebar() {
         </nav>
 
         {/* Logout Button */}
-        <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--card-border)' }}>
           <button 
             onClick={logout}
             className="hover-card"

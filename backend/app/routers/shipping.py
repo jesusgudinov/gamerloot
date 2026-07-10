@@ -18,7 +18,7 @@ async def quote_shipping(
     origin_city: str = "CDMX"
 ):
     """
-    Cotiza envíos con Mienvio dados un origen y un destino.
+    Cotiza envíos con Skydropx dados un origen y un destino.
     `origin_provider` puede ser PCH, TechSmart, CVA, Importacion Digital.
     `origin_city` puede ser CDMX o GDL.
     Si no se envía, usa por defecto CDMX y CP 06000.
@@ -144,7 +144,7 @@ class CreateShipmentRequest(BaseModel):
 @router.post("/create_shipment")
 async def create_shipment(request: CreateShipmentRequest, db: AsyncSession = Depends(get_db)):
     """
-    Crea la guía en Mienvio para una orden específica, descuenta saldo,
+    Crea la guía en Skydropx para una orden específica, descuenta saldo,
     y actualiza la orden a estado Enviado.
     """
     # 1. Obtener la orden de la base de datos

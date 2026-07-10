@@ -75,7 +75,7 @@ async def get_my_reviews(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    query = select(Review).options(selectinload(Review.product)).where(Review.user_id == current_user.id).order_by(desc(Review.created_at))
+    query = select(Review).options(selectinload(Review.product), selectinload(Review.user)).where(Review.user_id == current_user.id).order_by(desc(Review.created_at))
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -257,7 +257,7 @@ async def get_my_questions(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    query = select(Question).options(selectinload(Question.product)).where(Question.user_id == current_user.id).order_by(desc(Question.created_at))
+    query = select(Question).options(selectinload(Question.product), selectinload(Question.user)).where(Question.user_id == current_user.id).order_by(desc(Question.created_at))
     result = await db.execute(query)
     return result.scalars().all()
 

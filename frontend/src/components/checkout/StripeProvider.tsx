@@ -1,7 +1,8 @@
 "use client"
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
+import { useTheme } from 'next-themes';
 
 // En producción, cargar desde process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_placeholder");
@@ -12,14 +13,23 @@ interface StripeProviderProps {
 }
 
 export default function StripeProvider({ clientSecret, children }: StripeProviderProps) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = resolvedTheme === 'dark' || !resolvedTheme;
+
   const options = {
     clientSecret,
     appearance: {
-      theme: 'night' as const,
+      theme: (isDark ? 'night' : 'stripe') as any, // 'stripe' or 'night'
       variables: {
         colorPrimary: '#8b5cf6',
-        colorBackground: '#06070B',
-        colorText: '#ffffff',
+        colorBackground: isDark ? '#06070B' : '#ffffff',
+        colorText: isDark ? '#ffffff' : '#0f172a',
         colorDanger: '#ef4444',
         fontFamily: 'Inter, system-ui, sans-serif',
         spacingUnit: '4px',
@@ -28,9 +38,9 @@ export default function StripeProvider({ clientSecret, children }: StripeProvide
       },
       rules: {
         '.Input': {
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #cbd5e1',
           boxShadow: 'none',
-          backgroundColor: 'rgba(255,255,255,0.03)',
+          backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.9)',
         },
         '.Input:focus': {
           border: '1px solid #8b5cf6',
@@ -39,6 +49,8 @@ export default function StripeProvider({ clientSecret, children }: StripeProvide
       }
     },
   };
+
+  if (!mounted) return null;
 
   return (
     <Elements stripe={stripePromise} options={options}>

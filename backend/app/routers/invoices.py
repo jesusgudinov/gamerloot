@@ -52,6 +52,33 @@ async def update_billing_profile(data: BillingProfileCreate, current_user: User 
     await db.refresh(profile)
     return profile
 
+@router.post("/billing-profile/constancia", response_model=BillingProfileResponse)
+async def upload_constancia(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    from app.services.storage import storage_service
+    
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Solo se admiten archivos PDF para la constancia")
+        
+    result = await db.execute(select(BillingProfile).where(BillingProfile.user_id == current_user.id))
+    profile = result.scalars().first()
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Configura tus datos fiscales básicos antes de subir la constancia")
+        
+    # Save file
+    file_url = await storage_service.save_file(file, folder="constancias")
+    
+    profile.constancia_pdf_url = file_url
+    await db.commit()
+    await db.refresh(profile)
+    
+    return profile
+
+
 
 # --- Customer Invoice Endpoints ---
 
@@ -115,13 +142,16 @@ async def get_my_invoice_requests(current_user: User = Depends(get_current_user)
 async def get_admin_invoices(admin: User = Depends(get_current_admin_user), db: AsyncSession = Depends(get_db)):
     """Lista todas las facturas con datos del pedido para el Dashboard Administrativo."""
     result = await db.execute(
-        select(Invoice).options(selectinload(Invoice.order)).order_by(Invoice.created_at.desc())
+        select(Invoice, BillingProfile.constancia_pdf_url)
+        .outerjoin(BillingProfile, Invoice.user_id == BillingProfile.user_id)
+        .options(selectinload(Invoice.order))
+        .order_by(Invoice.created_at.desc())
     )
-    invoices = result.scalars().all()
+    rows = result.all()
     
     # Custom response with order folio included
     response = []
-    for inv in invoices:
+    for inv, constancia_url in rows:
         response.append({
             "id": inv.id,
             "order_id": inv.order_id,
@@ -136,6 +166,7 @@ async def get_admin_invoices(admin: User = Depends(get_current_admin_user), db: 
             "status": inv.status,
             "xml_url": inv.xml_url,
             "pdf_url": inv.pdf_url,
+            "constancia_pdf_url": constancia_url,
             "created_at": inv.created_at,
             "updated_at": inv.updated_at
         })

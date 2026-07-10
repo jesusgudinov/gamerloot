@@ -15,9 +15,9 @@ async def process_order_fulfillment(order_id: int, db: AsyncSession):
     """
     Procesa un pedido pagado:
     1. Divide la orden por bodega de origen (Warehouse).
-    2. Compra la guía en Mienvio.
+    2. Compra la guía en Skydropx.
     3. Guarda los números de guía en la BD.
-    4. Envía correo al cliente.
+    4. Envía correos a clientes y proveedores.
     """
     try:
         # 1. Obtener la orden con sus items
@@ -177,12 +177,23 @@ async def process_order_fulfillment(order_id: int, db: AsyncSession):
 
         if res.get("success"):
             data = res.get("data", {})
-            # Estructura devuelta por Skydropx V2
-            attrs = data.get("attributes", {}) if data.get("attributes") else data
+            # Estructura devuelta por Skydropx V2: Suele ser un arreglo o dict con 'data' como arreglo
+            shipment_list = data.get("data", data) if isinstance(data, dict) else data
+            
+            # Tomamos el primer envío generado
+            first_shipment = shipment_list[0] if isinstance(shipment_list, list) and len(shipment_list) > 0 else shipment_list
+            attrs = first_shipment.get("attributes", first_shipment) if isinstance(first_shipment, dict) else {}
+            
+            # En V2 la URL de la etiqueta suele venir en included o en label_url directamente
+            label_url = attrs.get("label_url", attrs.get("pdf_url"))
+            # A veces en V2 las etiquetas vienen en un arreglo de 'labels'
+            if not label_url and isinstance(attrs.get("labels"), list) and len(attrs.get("labels")) > 0:
+                label_url = attrs["labels"][0].get("pdf_url", attrs["labels"][0].get("url"))
+
             shipment_info["status"] = "Guía Generada"
-            shipment_info["carrier"] = attrs.get("carrier_name", attrs.get("provider", "Desconocido"))
-            shipment_info["tracking_number"] = attrs.get("tracking_number")
-            shipment_info["label_url"] = attrs.get("label_url")
+            shipment_info["carrier"] = attrs.get("carrier_name", attrs.get("provider", attrs.get("carrier", "Desconocido")))
+            shipment_info["tracking_number"] = attrs.get("tracking_number", attrs.get("tracking_code"))
+            shipment_info["label_url"] = label_url
             print(f"Fulfillment: Envío creado exitosamente. Tracking: {shipment_info['tracking_number']}")
         else:
             print(f"Fulfillment: Error creando envío con Skydropx: {res.get('detail')}")

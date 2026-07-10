@@ -69,6 +69,7 @@ class BillingProfile(Base):
     tax_regime = Column(String, nullable=False) # Régimen Fiscal
     cfdi_use = Column(String, nullable=False) # Uso CFDI
     zip_code = Column(String, nullable=False) # Código Postal Fiscal
+    constancia_pdf_url = Column(String, nullable=True) # Archivo PDF de la Constancia de Situación Fiscal
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

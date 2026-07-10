@@ -10,22 +10,8 @@ export function middleware(request: NextRequest) {
   const isClientLogin = pathname.startsWith('/auth/login') || pathname.startsWith('/login') || pathname.startsWith('/signup');
   const isAdminRoute = pathname.startsWith('/admin');
   
-  // Proteger rutas de admin (excepto el login de admin)
-  if (isAdminRoute && !isAdminLogin) {
-    if (!adminToken) {
-      return NextResponse.redirect(new URL('/admin/login', request.url));
-    }
-  }
-
-  // Si ya estamos autenticados y queremos entrar al login de admin
-  if (isAdminLogin && adminToken) {
-    return NextResponse.redirect(new URL('/admin', request.url));
-  }
-  
-  // Si ya estamos autenticados y queremos entrar al login de cliente
-  if (isClientLogin && clientToken) {
-     return NextResponse.redirect(new URL('/store', request.url));
-  }
+  // NOTA: La protección de rutas ahora se maneja 100% en el cliente (ProtectedRoute y AuthContext)
+  // porque el middleware no puede leer tokens de localStorage en entornos de desarrollo (SameSite/IP issues).
   
   return NextResponse.next();
 }

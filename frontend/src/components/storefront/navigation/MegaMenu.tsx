@@ -19,19 +19,15 @@ interface StoreCategory {
 interface MegaMenuProps {
   activeCategory: StoreCategory | null;
   subcategories: StoreCategory[];
-  onMouseLeave: () => void;
-  onMouseEnter: () => void;
   pointerX?: number;
 }
 
-export default function MegaMenu({ activeCategory, subcategories, onMouseLeave, onMouseEnter, pointerX = 0 }: MegaMenuProps) {
+export default function MegaMenu({ activeCategory, subcategories, pointerX = 0 }: MegaMenuProps) {
   if (!activeCategory) return null;
 
   return (
     <>
       <div 
-        onMouseLeave={onMouseLeave}
-        onMouseEnter={onMouseEnter}
         style={{
           position: 'absolute',
           top: '100%',

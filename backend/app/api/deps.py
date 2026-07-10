@@ -24,10 +24,10 @@ async def get_token_from_request(request: Request, token: str = Depends(oauth2_s
         # Fallback
         cookie_token = request.cookies.get("admin_access_token") or request.cookies.get("client_access_token") or request.cookies.get("access_token")
         
-    if cookie_token:
-        return cookie_token
     if token:
         return token
+    if cookie_token:
+        return cookie_token
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="No se proporcionó token de autenticación",

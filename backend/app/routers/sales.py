@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from app.api.deps import get_current_active_user, require_permissions
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -103,7 +103,10 @@ async def list_orders(
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).order_by(desc(Order.created_at))
+    query = select(Order).options(
+        selectinload(Order.items).selectinload(OrderItem.product),
+        selectinload(Order.invoice)
+    ).order_by(desc(Order.created_at))
     
     if status:
         query = query.where(Order.status == status)
@@ -129,7 +132,7 @@ async def list_my_orders(
     current_user: User = Depends(get_current_active_user)
 ):
     """Devuelve los pedidos del usuario autenticado"""
-    query = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).where(Order.user_id == current_user.id).order_by(desc(Order.created_at))
+    query = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product), selectinload(Order.invoice)).where(Order.user_id == current_user.id).order_by(desc(Order.created_at))
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -247,13 +250,13 @@ async def create_order(order_in: OrderCreate, db: AsyncSession = Depends(get_db)
         db.add(user_to_update)
         await db.commit()
         
-    stmt = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).where(Order.id == new_order.id)
+    stmt = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product), selectinload(Order.invoice)).where(Order.id == new_order.id)
     result = await db.execute(stmt)
     return result.scalar_one()
 
 @router.get("/orders/{id}", response_model=OrderResponse, dependencies=[Depends(require_permissions(["manage_sales"]))])
 async def get_order(id: int, db: AsyncSession = Depends(get_db)):
-    stmt = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product)).where(Order.id == id)
+    stmt = select(Order).options(selectinload(Order.items).selectinload(OrderItem.product), selectinload(Order.invoice)).where(Order.id == id)
     result = await db.execute(stmt)
     order = result.scalar_one_or_none()
     if not order:
@@ -440,3 +443,66 @@ async def export_sales_report(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=sales_report.csv"}
     )
+
+@router.post("/my-orders/{folio}/pay-stripe")
+async def pay_pending_order_stripe(
+    folio: str, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: User = Depends(get_current_active_user)
+):
+    q = select(Order).where(Order.folio == folio, Order.user_id == current_user.id)
+    res = await db.execute(q)
+    order = res.scalar_one_or_none()
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+        
+    if order.status != "Pendiente":
+        raise HTTPException(status_code=400, detail="Este pedido ya no se encuentra pendiente de pago")
+        
+    from app.services.stripe_service import StripeService
+    try:
+        intent = StripeService.create_payment_intent(
+            amount=order.total,
+            order_id=order.id,
+            user_email=current_user.email,
+            customer_name=current_user.full_name or current_user.username
+        )
+        if "error" in intent:
+            raise Exception(intent["error"])
+        return {"client_secret": intent["client_secret"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/my-orders/{folio}/upload-receipt")
+async def upload_spei_receipt(
+    folio: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    q = select(Order).where(Order.folio == folio, Order.user_id == current_user.id)
+    res = await db.execute(q)
+    order = res.scalar_one_or_none()
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+        
+    if order.status != "Pendiente":
+        raise HTTPException(status_code=400, detail="Este pedido ya no se encuentra pendiente de pago")
+        
+    import os, shutil, uuid
+    os.makedirs("media/receipts", exist_ok=True)
+    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    filename = f"{folio}_{uuid.uuid4().hex[:8]}.{ext}"
+    filepath = f"media/receipts/{filename}"
+    
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    order.receipt_url = f"/{filepath}"
+    order.payment_method = "SPEI"
+    order.status = "Procesando"
+    
+    await db.commit()
+    return {"detail": "Comprobante subido exitosamente. Pedido en procesamiento.", "receipt_url": order.receipt_url}

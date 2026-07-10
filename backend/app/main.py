@@ -49,7 +49,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
-from app.routers import auth, products, sync, catalog, marketing, sales, clients, shipping, roles, users, storefront, checkout, mapping, interactions, addresses, rma, configurator, uploads, support, invoices
+from app.routers import auth, products, sync, catalog, marketing, sales, clients, shipping, roles, users, storefront, checkout, mapping, interactions, addresses, rma, configurator, uploads, support, invoices, stripe_payments
 
 from app.api.deps import get_current_active_user, require_permissions
 from fastapi import Depends
@@ -74,6 +74,7 @@ app.include_router(mapping.router, prefix="/api/v1/mapping", tags=["Mapeo de Tax
 app.include_router(interactions.router, prefix="/api/v1/interactions", tags=["Reseñas y Q&A"])
 app.include_router(support.router, prefix="/api/v1/support", tags=["Soporte y Tickets"])
 app.include_router(uploads.router, prefix="/api/v1/uploads", tags=["Archivos y Bucket"])
+app.include_router(stripe_payments.router, prefix="/api/v1/stripe", tags=["Pagos (Stripe)"])
 
 from app.routers import webhooks
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
